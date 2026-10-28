@@ -1,6 +1,6 @@
 """Run a benchmark entry: alternate the buggy and fixed builds, one fresh engine per run.
 
-Usage: python -m driftgate.run bench/entries/<id>.toml [--runs N] [--workload NAME]
+Usage: python -m driftgate.run bench/entries/<id>.toml [--runs N] [--workload NAME] [--side fixed|buggy]
 Runs land in runs/<gpu>/<entry>/<workload>/<fixed|buggy>/<i>.npz.
 """
 
@@ -24,6 +24,7 @@ def main() -> None:
     ap.add_argument("entry", type=Path)
     ap.add_argument("--runs", type=int, default=3, help="runs per build")
     ap.add_argument("--workload", help="override the entry's workload")
+    ap.add_argument("--side", choices=("fixed", "buggy"), help="run only this build, e.g. extra baseline reruns")
     args = ap.parse_args()
 
     entry = load_entry(args.entry, args.workload)
@@ -31,7 +32,7 @@ def main() -> None:
     if need and compute_capability() < need:
         sys.exit(f"skip {entry['id']}: needs compute capability {need}+, this GPU is {compute_capability()}")
     for i in range(args.runs):
-        for side in ("fixed", "buggy"):
+        for side in [args.side] if args.side else ("fixed", "buggy"):
             path = runs_dir(entry) / side / f"{i}.npz"
             if path.exists():
                 continue

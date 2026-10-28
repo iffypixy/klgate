@@ -1,8 +1,10 @@
 """Score every detector on every pair of runs of an entry.
 
-Same-build pairs measure false alarms; buggy-vs-fixed pairs measure detection. The KL
-threshold for judging a pair is the largest KL among the entry's other same-build pairs,
-so no pair is judged by a threshold fitted on itself.
+Pairs of fixed-build reruns measure false alarms; buggy-vs-fixed pairs measure detection.
+The KL threshold for judging a pair is the 95th percentile of KL over the fixed-build pairs
+that share no run with it, so no pair is judged by a threshold fitted on its own runs. Buggy-vs-buggy pairs are left
+out: a CI gate only ever has reruns of its known-good baseline to calibrate on, and some
+bugs make the buggy build disagree with itself.
 
 Usage: python -m driftgate.report bench/entries/<id>.toml [workload]
        python -m driftgate.report all [workload]    # one row per entry with runs
@@ -22,6 +24,7 @@ from driftgate.run import Root, load_entry, runs_dir
 
 GateTolerance = 0.08  # vLLM's default GSM8K tolerance
 Alpha = 0.05
+KlQuantile = 0.95  # the spec's 5% false-alarm target on baseline reruns
 
 
 @dataclass(frozen=True)
@@ -57,6 +60,8 @@ def score(entry: dict) -> tuple[list[Pair], dict[str, float]]:
     correct = {n: gsm8k.correct(r, gold, tok) for n, r in runs.items()}
     pairs = []
     for a, b in itertools.combinations(names, 2):
+        if a.startswith("buggy"):  # names list fixed first, so both are buggy
+            continue
         diffs = compare(runs[a], runs[b])
         pairs.append(Pair(
             a, b,
@@ -74,8 +79,14 @@ def detectors(same: list[Pair]) -> dict:
     return {
         f"GSM8K gate ({GateTolerance:.0%} drop)": lambda p: abs(p.accuracy_drop) > GateTolerance,
         f"Paired McNemar (p < {Alpha})": lambda p: p.mcnemar_p < Alpha,
-        "Token KL above rerun max": lambda p: p.kl > max((q.kl for q in same if q is not p), default=0.0),
+        f"Token KL above rerun {KlQuantile:.0%} quantile": lambda p: p.kl > kl_threshold(p, same),
     }
+
+
+def kl_threshold(p: Pair, same: list[Pair]) -> float:
+    """The KL quantile over fixed-build pairs disjoint from p; never flags without any."""
+    rest = [q.kl for q in same if not {q.a, q.b} & {p.a, p.b}]
+    return float(np.quantile(rest, KlQuantile)) if rest else float("inf")
 
 
 def summary(entries: list[dict], workload: str) -> str:
@@ -84,7 +95,7 @@ def summary(entries: list[dict], workload: str) -> str:
     lines = [
         f"## All entries · {workload}",
         "",
-        "Each cell: buggy-vs-fixed pairs flagged (same-build pairs flagged).",
+        "Each cell: buggy-vs-fixed pairs flagged (fixed-build reruns flagged).",
         "",
         "| Entry | GSM8K accuracy, fixed → buggy | Mean KL, reruns → buggy vs fixed | " + " | ".join(names) + " |",
         "| --- | --- | --- | " + " | ".join("---" for _ in names) + " |",
@@ -115,11 +126,11 @@ def render(entry: dict, pairs: list[Pair], accuracy: dict[str, float]) -> str:
         "",
         f"GSM8K accuracy: fixed {accuracy['fixed']:.3f}, buggy {accuracy['buggy']:.3f}.",
         "",
-        "| Detector | Same-build pairs flagged | Buggy-vs-fixed pairs flagged |",
+        "| Detector | Fixed-build reruns flagged | Buggy-vs-fixed pairs flagged |",
         "| --- | --- | --- |",
         *rows,
         "",
-        "| Measure | Same-build pairs | Buggy-vs-fixed pairs |",
+        "| Measure | Fixed-build reruns | Buggy-vs-fixed pairs |",
         "| --- | --- | --- |",
         f"| Mean token KL | {span(same, lambda p: p.kl)} | {span(cross, lambda p: p.kl)} |",
         f"| Prompts whose output differs | {span(same, lambda p: p.diverged)} | {span(cross, lambda p: p.diverged)} |",
