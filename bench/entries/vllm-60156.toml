@@ -6,6 +6,9 @@ buggy = "e161a0798c2305252e2b9bae483c537e9d0fc027"
 fixed = "ba77c4c13018aa19244545cdc7ae8e016d66955e"
 how_found = "code reading; fix PR reports WikiText-2 PPL 8.025 -> 8.003 on TinyLlama-1.1B"
 
+# Triton attention supports an FP8 KV cache only with native FP8 (fp8e4nv), so Ada or newer.
+min_compute_capability = 8.9
+
 model = "Qwen/Qwen3-0.6B"
 workload = "gsm8k-5shot"
 

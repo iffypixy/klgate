@@ -5,6 +5,7 @@ threshold for judging a pair is the largest KL among the entry's other same-buil
 so no pair is judged by a threshold fitted on itself.
 
 Usage: python -m driftgate.report bench/entries/<id>.toml [workload]
+       python -m driftgate.report all [workload]    # one row per entry with runs
 """
 
 import itertools
@@ -35,12 +36,18 @@ class Pair:
 
 
 def main() -> None:
-    entry = load_entry(Path(sys.argv[1]), sys.argv[2] if len(sys.argv) > 2 else None)
-    pairs = score(entry)
-    print(render(entry, pairs))
+    workload = sys.argv[2] if len(sys.argv) > 2 else None
+    if sys.argv[1] != "all":
+        entry = load_entry(Path(sys.argv[1]), workload)
+        print(render(entry, *score(entry)))
+        return
+    entries = [load_entry(p, workload) for p in sorted((Root / "bench" / "entries").glob("*.toml"))]
+    ready = [e for e in entries if all(any((runs_dir(e) / s).glob("*.npz")) for s in ("fixed", "buggy"))]
+    print(summary(ready, workload or "each entry's own workload"))
 
 
-def score(entry: dict) -> list[Pair]:
+def score(entry: dict) -> tuple[list[Pair], dict[str, float]]:
+    """Every run pair, and each build's mean GSM8K accuracy."""
     gold = gsm8k.answers(Root / entry["prompts"])
     tok = Tokenizer.from_pretrained(entry["model"])
     names = [f"{side}/{p.stem}" for side in ("fixed", "buggy") for p in sorted((runs_dir(entry) / side).glob("*.npz"))]
@@ -59,27 +66,54 @@ def score(entry: dict) -> list[Pair]:
             accuracy_drop=float(correct[a].mean() - correct[b].mean()),
             mcnemar_p=gsm8k.mcnemar(correct[a], correct[b]),
         ))
-    return pairs
+    accuracy = {side: float(np.mean([c.mean() for n, c in correct.items() if n.startswith(side)])) for side in ("fixed", "buggy")}
+    return pairs, accuracy
 
 
-def render(entry: dict, pairs: list[Pair]) -> str:
-    same = [p for p in pairs if p.same_build]
-    cross = [p for p in pairs if not p.same_build]
-    detectors = {
+def detectors(same: list[Pair]) -> dict:
+    return {
         f"GSM8K gate ({GateTolerance:.0%} drop)": lambda p: abs(p.accuracy_drop) > GateTolerance,
         f"Paired McNemar (p < {Alpha})": lambda p: p.mcnemar_p < Alpha,
         "Token KL above rerun max": lambda p: p.kl > max((q.kl for q in same if q is not p), default=0.0),
     }
+
+
+def summary(entries: list[dict], workload: str) -> str:
+    """One row per entry: each detector's detections, with its false alarms in brackets."""
+    names = list(detectors([]))
+    lines = [
+        f"## All entries · {workload}",
+        "",
+        "Each cell: buggy-vs-fixed pairs flagged (same-build pairs flagged).",
+        "",
+        "| Entry | GSM8K accuracy, fixed → buggy | Mean KL, reruns → buggy vs fixed | " + " | ".join(names) + " |",
+        "| --- | --- | --- | " + " | ".join("---" for _ in names) + " |",
+    ]
+    for entry in entries:
+        pairs, accuracy = score(entry)
+        same = [p for p in pairs if p.same_build]
+        cross = [p for p in pairs if not p.same_build]
+        cells = [f"{sum(map(f, cross))}/{len(cross)} ({sum(map(f, same))}/{len(same)})" for f in detectors(same).values()]
+        kl = f"{np.mean([p.kl for p in same]):.1e} → {np.mean([p.kl for p in cross]):.1e}"
+        lines.append(f"| {entry['id']} | {accuracy['fixed']:.3f} → {accuracy['buggy']:.3f} | {kl} | " + " | ".join(cells) + " |")
+    return "\n".join(lines)
+
+
+def render(entry: dict, pairs: list[Pair], accuracy: dict[str, float]) -> str:
+    same = [p for p in pairs if p.same_build]
+    cross = [p for p in pairs if not p.same_build]
     rows = [
         f"| {name} | {sum(map(flag, same))}/{len(same)} | {sum(map(flag, cross))}/{len(cross)} |"
-        for name, flag in detectors.items()
+        for name, flag in detectors(same).items()
     ]
-    accuracy = lambda ps: f"{min(abs(p.accuracy_drop) for p in ps):.3f}–{max(abs(p.accuracy_drop) for p in ps):.3f}"
+    gap = lambda ps: f"{min(abs(p.accuracy_drop) for p in ps):.3f}–{max(abs(p.accuracy_drop) for p in ps):.3f}"
     span = lambda ps, f: f"{min(map(f, ps)):.2e}–{max(map(f, ps)):.2e}"
     return "\n".join([
         f"## {entry['id']} · {entry['workload']}",
         "",
         entry["summary"],
+        "",
+        f"GSM8K accuracy: fixed {accuracy['fixed']:.3f}, buggy {accuracy['buggy']:.3f}.",
         "",
         "| Detector | Same-build pairs flagged | Buggy-vs-fixed pairs flagged |",
         "| --- | --- | --- |",
@@ -89,7 +123,7 @@ def render(entry: dict, pairs: list[Pair]) -> str:
         "| --- | --- | --- |",
         f"| Mean token KL | {span(same, lambda p: p.kl)} | {span(cross, lambda p: p.kl)} |",
         f"| Prompts whose output differs | {span(same, lambda p: p.diverged)} | {span(cross, lambda p: p.diverged)} |",
-        f"| GSM8K accuracy gap | {accuracy(same)} | {accuracy(cross)} |",
+        f"| GSM8K accuracy gap | {gap(same)} | {gap(cross)} |",
         f"| Smallest McNemar p | {min(p.mcnemar_p for p in same):.3f} | {min(p.mcnemar_p for p in cross):.3f} |",
     ])
 

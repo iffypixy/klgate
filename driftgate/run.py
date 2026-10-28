@@ -9,6 +9,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 import tomllib
 from pathlib import Path
 
@@ -26,6 +27,9 @@ def main() -> None:
     args = ap.parse_args()
 
     entry = load_entry(args.entry, args.workload)
+    need = entry.get("min_compute_capability")
+    if need and compute_capability() < need:
+        sys.exit(f"skip {entry['id']}: needs compute capability {need}+, this GPU is {compute_capability()}")
     for i in range(args.runs):
         for side in ("fixed", "buggy"):
             path = runs_dir(entry) / side / f"{i}.npz"
@@ -60,6 +64,14 @@ def hardware() -> str:
         capture_output=True, text=True, check=True,
     ).stdout.strip()
     return re.sub(r"[^a-z0-9]+", "-", name.lower().removeprefix("nvidia ")).strip("-")
+
+
+def compute_capability() -> float:
+    cap = subprocess.run(
+        ["nvidia-smi", "--query-gpu=compute_cap", "--format=csv,noheader", "-i", "0"],
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    return float(cap)
 
 
 def capture(entry: dict, sha: str, path: Path) -> None:
