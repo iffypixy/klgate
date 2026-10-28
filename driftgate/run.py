@@ -1,12 +1,13 @@
 """Run a benchmark entry: alternate the buggy and fixed builds, one fresh engine per run.
 
 Usage: python -m driftgate.run bench/entries/<id>.toml [--runs N] [--workload NAME]
-Runs land in runs/<entry>/<workload>/<fixed|buggy>/<i>.npz.
+Runs land in runs/<gpu>/<entry>/<workload>/<fixed|buggy>/<i>.npz.
 """
 
 import argparse
 import json
 import os
+import re
 import subprocess
 import tomllib
 from pathlib import Path
@@ -44,7 +45,21 @@ def load_entry(path: Path, workload: str | None = None) -> dict:
 
 
 def runs_dir(entry: dict) -> Path:
-    return Root / "runs" / entry["id"] / entry["workload"]
+    return Root / "runs" / hardware() / entry["id"] / entry["workload"]
+
+
+def hardware() -> str:
+    """The GPU these runs come from, so runs from different machines never mix.
+
+    DRIFTGATE_HW overrides it, to report on runs copied from another machine.
+    """
+    if hw := os.environ.get("DRIFTGATE_HW"):
+        return hw
+    name = subprocess.run(
+        ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader", "-i", "0"],
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    return re.sub(r"[^a-z0-9]+", "-", name.lower().removeprefix("nvidia ")).strip("-")
 
 
 def capture(entry: dict, sha: str, path: Path) -> None:
@@ -60,13 +75,16 @@ def capture(entry: dict, sha: str, path: Path) -> None:
         "--out", str(path),
     ]
     # A fresh process per run, so run-to-run noise includes launch effects.
-    env = os.environ | (WslEnv if in_wsl() else {}) | entry.get("env", {})
+    env = os.environ | BaseEnv | (WslEnv if in_wsl() else {}) | entry.get("env", {})
     subprocess.run(cmd, check=True, cwd="/", env=env)
 
 
-# vLLM disables pinned memory under WSL, which Model Runner V2 needs for its UVA
-# buffers, and FlashInfer's sampler JIT-compiles with nvcc, which the laptop lacks.
-WslEnv = {"VLLM_USE_V2_MODEL_RUNNER": "0", "VLLM_USE_FLASHINFER_SAMPLER": "0"}
+# FlashInfer's top-k/top-p sampler JIT-compiles with nvcc and ninja at engine warmup,
+# which neither the laptop nor the pod image has. Greedy decoding never uses it.
+BaseEnv = {"VLLM_USE_FLASHINFER_SAMPLER": "0"}
+
+# vLLM disables pinned memory under WSL, which Model Runner V2 needs for its UVA buffers.
+WslEnv = {"VLLM_USE_V2_MODEL_RUNNER": "0"}
 
 
 def in_wsl() -> bool:

@@ -1,0 +1,6 @@
+# A 40-prompt served run, to check an entry launches and captures before a full queue.
+mode = "serve"
+concurrency = 32
+prompts = "bench/prompts/gsm8k-5shot-40.jsonl"
+max_tokens = 256
+stop = ["Question", "Assistant:", "<|separator|>"]

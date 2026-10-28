@@ -1,12 +1,19 @@
-"""Install vLLM at an exact commit into its own venv, from vLLM's per-commit wheels."""
+"""Install vLLM at an exact commit into its own venv, from vLLM's per-commit wheels.
 
+Usage: python3 -m driftgate.build <sha | bench/entries/<id>.toml> ...
+An entry file installs both of its builds.
+"""
+
+import os
 import re
 import subprocess
 import sys
+import tomllib
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-BuildsDir = Path.home() / ".cache" / "driftgate" / "builds"
+BuildsDir = Path(os.environ.get("DRIFTGATE_BUILDS", Path.home() / ".cache" / "driftgate" / "builds"))
 WheelIndex = "https://wheels.vllm.ai/{sha}/vllm/"
 Python = "3.12"
 
@@ -17,8 +24,8 @@ def venv_path(sha: str) -> Path:
 
 def python_for(sha: str) -> Path:
     py = venv_path(sha) / "bin" / "python"
-    if not py.exists():
-        sys.exit(f"build {sha[:12]} is not installed: run `python -m driftgate.build {sha}`")
+    if not (venv_path(sha) / ".done").exists():
+        sys.exit(f"build {sha[:12]} is not installed: run `python3 -m driftgate.build {sha}`")
     return py
 
 
@@ -29,7 +36,7 @@ def install(sha: str) -> Path:
     if (venv / ".done").exists():
         return venv
     wheel = find_wheel(sha)
-    subprocess.run(["uv", "venv", "-q", "--python", Python, str(venv)], check=True)
+    subprocess.run(["uv", "venv", "-q", "--clear", "--python", Python, str(venv)], check=True)
     subprocess.run(
         ["uv", "pip", "install", "-q", "--python", str(venv / "bin" / "python"), wheel],
         check=True,
@@ -50,6 +57,16 @@ def find_wheel(sha: str) -> str:
     return urllib.request.urljoin(index, names[0])
 
 
+def shas(arg: str) -> list[str]:
+    if arg.endswith(".toml"):
+        entry = tomllib.loads(Path(arg).read_text())
+        return [entry["buggy"], entry["fixed"]]
+    return [arg]
+
+
 if __name__ == "__main__":
-    for sha in sys.argv[1:]:
-        print(install(sha))
+    todo = list(dict.fromkeys(sha for arg in sys.argv[1:] for sha in shas(arg)))
+    # Installs are network- and disk-bound; a few at a time keeps the mirror happy.
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        for venv in pool.map(install, todo):
+            print(venv, flush=True)
