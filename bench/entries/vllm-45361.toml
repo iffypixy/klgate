@@ -1,0 +1,18 @@
+id = "vllm-45361"
+kind = "commit-pair"
+summary = "INT8 per-token-head KV cache writes truncate toward zero instead of rounding to nearest"
+fix_pr = "https://github.com/vllm-project/vllm/pull/45361"
+buggy = "635c38338afe132f9555ebf4a7c8ac7dfb05b2a0"
+fixed = "9c450b102788bb271c1710354db22290ed57f543"
+how_found = "code reading; fix PR reports relative score loss vs bf16 falling from ~5% to ~0.5%"
+
+model = "Qwen/Qwen3-0.6B"
+workload = "gsm8k-5shot"
+
+[engine]
+enforce_eager = true
+gpu_memory_utilization = 0.55
+max_model_len = 2048
+max_num_seqs = 32
+kv_cache_dtype = "int8_per_token_head"
+attention_backend = "TRITON_ATTN"

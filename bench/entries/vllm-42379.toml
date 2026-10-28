@@ -1,0 +1,19 @@
+id = "vllm-42379"
+kind = "commit-pair"
+summary = "RMSNorm CUDA kernels upcast the weight to fp32 before multiplying, instead of multiplying in its native dtype"
+fix_pr = "https://github.com/vllm-project/vllm/pull/42379"
+introduced_by = "https://github.com/vllm-project/vllm/pull/40860"
+buggy = "e9499996df8968f473db1f6bc7ec31207022aea0"
+fixed = "124fac10cb0ea83aee2ffeabac0b413d6b759b26"
+how_found = "user report: per-layer diff vs reference (#42325)"
+
+model = "Qwen/Qwen3-0.6B"
+workload = "gsm8k-5shot"
+
+# The custom RMSNorm kernel runs only without torch.compile, which otherwise lowers its
+# own native op; eager mode also fits the 4 GB laptop GPU.
+[engine]
+enforce_eager = true
+gpu_memory_utilization = 0.55
+max_model_len = 2048
+max_num_seqs = 32

@@ -1,0 +1,527 @@
+6357 2025-05-26 [Bugfix] Fix the lm_head in gpt_bigcode in lora mode
+11764 2025-01-12 [Hardware][TPU] workaround fix for MoE on TPU
+13721 2025-02-24 [V1][Core] Fix memory issue with logits & sampling
+13775 2025-02-24 Revert "[V1][Core] Fix memory issue with logits & sampling"
+13776 2025-03-08 [V1][Core] Fix memory issue with logits & sampling
+14255 2025-03-06 [BugFix] Fix prefix caching V0 MLA
+14504 2025-03-09 Revert "[V1][Core] Fix memory issue with logits & sampling"
+14508 2025-03-11 [V1][Core] Fix memory issue with logits & sampling
+14510 2025-03-09 [Hardware][TPU] Fix the recompiling issue in logits processor after warmup
+14512 2025-03-12 [BugFix][V1] Fix parallel sampling finishing/aborts
+14666 2025-03-13 [Bugfix] Fix chunked prefill for GGUF
+14815 2025-03-15 [Bugfix][V1] Fix flashinfer sampling
+14894 2025-03-16 [BugFix][V1] Fix overhead related to bad_words sampling when not in use
+15037 2025-03-18 [TPU][V1][Bugfix] Fix chunked prefill with padding
+15049 2025-03-18 fix long dtype in topk sampling
+15492 2025-03-26 [BugFix] Fix nightly MLA failure (FA2 + MLA chunked prefill, i.e. V1, producing bad results)
+16059 2025-04-04 [Bugfix][TPU] Fix V1 TPU worker for sliding window
+16403 2025-04-11 [Bugfix] Don't set an upper bound on repetition penalty
+16863 2025-04-22 [Bugfix]: fix issue with n>1 sampling on v1 requests overriding each other
+16878 2025-04-26 [Bugfix] Fix Qwen2.5-Omni M-RoPE position ids generation
+16912 2025-04-21 [Bugfix] Fix GLM rotary_dim issue and support v1
+17180 2025-04-26 [Bugfix] gemma[2,3] interleaved attention when sliding window is disabled
+17731 2025-05-23 [V0][Bugfix] Fix parallel sampling performance regression when guided decoding is enabled
+18093 2025-05-16 [Bugfix][ROCm] Use `chunked_prefill_paged_decode` as fallback for V1 attention on ROCm
+18693 2025-05-26 [Bugfix] Fix Mistral-format models with sliding window
+18909 2025-06-01 [Bugfix] Fix EAGLE3 broken logits
+19029 2025-06-04 [Bugfix] Max concurrency estimation and check_enough_kv_cache_memory for models with sliding window layers
+20343 2025-07-02 [Bugfix] Fix dynamic rotary embedding
+20491 2025-07-06 [BUG] Fix #20484. Support empty sequence in cuda penalty kernel
+20857 2025-07-13 [Bugfix] Fix: add patch_rope_scaling after hf override
+20934 2025-07-15 [Bugfix] Switch bailout logic for kv-cache-dtype with SM100 Flashinfer
+21068 2025-11-08 [Bugfix][LoRA][Spec Decode] Support LoRA with speculative decoding
+21525 2025-07-29 [Bugfix] Fix workspace buffer None issue for Flashinfer TRTLLM Backend
+21863 2025-07-29 [BugFix] Fix interleaved sliding window not set for Gemma3n
+22034 2025-08-02 [Bugfix] Mamba2 remove bugged initial state condition in chunk scan
+22592 2025-08-11 [BugFix] Fix logits repetition penalty cuda check
+22637 2025-08-12 [Bugfix] Fix ModernBert load & Enable sliding window attention for bidirectional attention.
+22691 2025-08-19 [bug fix] Fix llama4 spec decoding
+22721 2025-08-20 fix cuda graph
+22726 2025-08-14 [Bugfix] Add reset prefix cache for online serving
+23809 2025-09-24 [fix]: add Arm 4bit fused moe support
+23918 2025-09-02 [BugFix] Fix EXAONE4 rotary embeddings
+24081 2025-09-03 [XPU] Fix the bug of LoRA logits on the XPU platform
+24826 2025-09-14 fix type of sampling rate for encode_base64
+24990 2025-09-19 [Core][Prefix Hash] Fix prefix hash metrics sliding window maintainance
+25145 2025-10-30 [XPU][bugfix] fix rope for llama4 and deepseek
+25983 2025-10-03 Quick fix for IMA with the Prefix Prefill kernel during graph capture
+26005 2025-10-01 [Bugfix] Apply same sampling parameters for both `n=1` and `n>1`
+26189 2025-10-09 [Model] Gemma3: Fix GGUF loading and quantization
+26296 2025-10-10 [bugfix][DCP] fix block_size of hash in DCP prefix caching
+26499 2025-10-09 [Bugfix] Fix CUDA graph selection bug in FlashInfer at high concurrency
+26668 2025-12-12 [ROCm] Enable Triton ScaledMM fallback + kernel selection fix
+27035 2025-10-18 [fix][cpu] fix prefill attention in CPU attention backend
+27219 2025-10-23 [CORE] Support Prefix Caching with Prompt Embeds
+27373 2025-10-23 [Bugfix][ROCm][DeepSeek] Fix for forward_hip in rope for DeepSeek
+27431 2025-10-28 [Bugfix] In LongRoPE, decide short vs long based on max_model_len
+27773 2025-10-30 [Bugfix] mamba-block-size is set for vision language model
+27910 2025-11-01 [BugFix] Fix mixed penalties batch with async scheduling
+28318 2025-11-08 [bugfix] support eagle with lora cudagraph specialization
+28323 2025-11-11 Fix rotary embedding benchmark script
+28346 2025-11-21 fix cross attention
+28500 2025-11-12 [ROCm] [Bugfix] Fix `fused_qknorm_rope_kernel` rocm compatibility
+28537 2025-11-14 Fix KV sharing fast prefill with cudagraph enabled
+28615 2025-11-13 Fix: Correctly filter special tokens in benchmark_prefix_caching
+28617 2025-11-13 [BugFix] DeepSeek-OCR: apply NoRepeatNGramLogitsProcessor to greedy path
+28682 2025-11-14 [ROCm][Bugfix] Fix compilation errors with fused_qknorm_rope_kernel.cu
+28702 2025-11-14 [BugFix] Fix FA3 IMA with FULL_AND_PIECEWISE and cascade attention (default)
+28739 2025-11-14 [Bugfix] Fix ChunkedLocalAttention CUDA Graph setting
+28760 2025-11-20 [Bugfix][cache_kernels]: Fix OOB in cache_kernels.cu
+28787 2025-11-16 [BugFix] Fix async scheduling + chunked prefill + preemption
+28841 2025-11-25 [Bugfix] Fix GPT-OSS AR+NORM fusion
+28911 2025-11-25 [Bugfix] If chunked_prefill is disabled, end the scheduling early.
+28968 2025-11-19 [DeepSeek] Fix DeepSeek V3.2 Rope Embedding
+29092 2025-11-21 [Bugfix] Fix Plamo3 rope handling
+29387 2026-02-10 [BugFix] Avoid prefix cache hit in the same schedule step for mamba layers
+29393 2025-11-25 [Bugfix] Fix logic for choosing default prefix caching setting
+29487 2025-12-05 [Bugfix] Correct num_q_heads on DCP for Flashinfer backends 
+29593 2025-11-27 [Bugfix] Fix HunyuanVL XD-RoPE
+29700 2025-11-30 Fix RoPE failures in Transformers nightly
+29948 2025-12-03 [Bugfix][Quantization] Support BF16 tensors on GGUF
+30330 2025-12-10 [Bugfix] Fix cuda graph sizes when running with speculative decoding
+30505 2025-12-12 [Bugfix][Model] Fix Afmoe rope_parameters issue
+30670 2025-12-15 [Bugfix] Fix multimodal configuration for Qwen3VL MOE model
+30829 2025-12-17 [Bugfix][CPU] Fix CPU backend ROPE dispatch for VL models
+30877 2026-01-23 [V1][Hybrid] Mamba Prefix Caching with align mode
+30915 2025-12-18 [Fix][FlexAttention] return max logical block index to handle reused blocks
+31055 2026-01-06 [Bugfix] Fix GLM-4 MoE router logits dtype for data parallel chunking
+31106 2026-01-07 [Bugfix][Hardware][AMD] Consolidate FP8 min/max values helper function
+31179 2025-12-24 [Bugfix][Hardware][AMD] Fix FP8 dtype in silu_mul quantization
+31540 2026-01-02 [Bugfix] Fix block size used in EAGLE slot mapping
+31757 2026-01-07 [Bugfix][MTP] Fix GLM4 MoE fp8 loading with MTP on
+32118 2026-01-12 [Bugfix] Fix stale SSM state for new Mamba requests scheduled as decode
+32348 2026-01-15 [Model Runner V2] Support FlashInfer backend & Fix CUDA Graph bug [1/2]
+32540 2026-01-18 [Bugfix] Fix GLM-ASR audio encoder RoPE dim
+32669 2026-01-29 Bugfix: Pass router logits dtype in nemotron shared experts
+32877 2026-02-20 [Bugfix][Hardware][AMD] Fix ROCM_AITER_FA speculative decoding support
+33326 2026-01-29 [Bugfix][Kernel] Fix negative memory offset in GDN Triton kernel
+33360 2026-01-31 [BugFix] Fix whisper FA2 + full cudagraphs
+33376 2026-01-30 fix: allow LFM2 MoE prefix caching (align)
+33393 2026-01-30 [BugFix][LoRA] TritonExperts is ModularMoEPath for FP8 models
+33521 2026-02-02 Fix mistral sliding window parsing
+33620 2026-02-03 [Bugfix] Disable RoutingMethodType.[Renormalize,RenormalizeNaive] for TRTLLM per-tensor FP8 MoE
+33800 2026-02-04 [Bugfix] Support `RotaryEmbedding` CustomOp for gpt-oss
+33967 2026-02-07 [Bugfix] Fix QK Norm+RoPE fusion pattern matching on B200+FP8
+34087 2026-02-09 [Bugfix] Fix shared expert input for latent MoE in EP+DP (Nemotron-H)
+34127 2026-03-04 fix minicpmo4.5: fix attn_mask in vit attn && fix resampler pos_emb i…
+34220 2026-02-10 [V1][BugFix] Fix EAGLE3 encoder cache miss with disable_chunked_mm_input
+34570 2026-02-21 [ROCm][AITER] Fix aiter paged_attention_v1 decode for sliding window and head_size < 64
+34571 2026-03-04 [Bugfix] Cap FULL decode cudagraph sizes for Mamba/hybrid models (#34094)
+34798 2026-03-01 [Mamba1] - Kernel Level Chunk Alignment for Prefix Caching
+34874 2026-02-23 [Bugfix] Fix prefix caching for Mamba 'all' mode (Nemotron models)
+34914 2026-02-19 [Bugfix] Fix Qwen3.5 Cutlass fp8 kernel on hopper - clamp block scales
+35030 2026-02-22 Fix apply_top_k_top_p_triton called by non-cuda logits Tensor
+35080 2026-02-23 [Bugfix] Fix MRotaryEmbedding missing `truncate` attr with YaRN scaling
+35085 2026-02-25 [Bugfix] Gracefully disable AllReduceFusionPass on GPUs without multicast support
+35088 2026-02-24 Fix fallback to default tactic (flashinfer autotuner) with trtllm_fp4_block_scale_moe
+35097 2026-02-27 [BugFix] Fix 3D rope in transformers backend
+35157 2026-02-25 [Linear Attention] fix bug for linear attention + prefix caching + reset_prefix_cache
+35175 2026-03-26 [Bugfix] Restore CUDA graph persistent buffers for FP8 FlashMLA decode
+35210 2026-02-26 [BugFix] Fix fp4 quant kernel on CUDA 12.8
+35219 2026-03-10 [BUGFIX][Mamba][Qwen3.5] Zero freed SSM cache blocks on GPU
+35442 2026-03-03 [Perf] [Hybrid] Copy num_accepted_tokens in non-blocking way when not using prefix caching
+35447 2026-03-17 [Bugfix] Fix NemotronH MTP + Chunked Prefill
+35533 2026-02-27 [ROCm]: fix aiter rope functionalization
+35568 2026-05-15 [Bugfix] Fix SM121 (DGX Spark) exclusion from Marlin/CUTLASS FP8 paths
+35656 2026-03-04 [Bugfix][Model] Fix FP8 k_scale/v_scale not loaded for Qwen3-MoE
+35711 2026-03-04 [Bugfix] Guard mm_token_type_ids kwarg in get_mrope_input_positions
+35741 2026-03-02 [Bugfix] Fix missing sequence_lengths in qwen3_omni_moe_thinker
+35849 2026-03-05 [Bugfix] Fix score layer quantization for sequence classification models  - Qwen3 (VL) Reranker
+35923 2026-03-11 [Bugfix] Add Multiple of 16 block_size to triton fallback on rocm Attention to support qwen3_5
+36070 2026-03-31 [Bugfix][DCP] Fix CUDA graph capture for Decode Context Parallelism
+36165 2026-03-06 [Bugfix] Fix `cudagraph_mode:FULL` dispatch (This does not impact `FULL_AND_PIECEWISE` (default))
+36296 2026-03-11 [Bug] Fix TRTLLM Block FP8 MoE Monolithic
+36329 2026-05-21 [Bugfix] Fix Qwen3.5 GatedDeltaNet in_proj_ba Marlin failure at TP>=2
+36580 2026-03-10 [Model Runner V2] Fix `_compute_slot_mappings_kernel` for chunked prefill
+36708 2026-03-20 fix: disambiguate multimodal prefix cache keys
+36931 2026-03-13 [Feat][Bugfix] Enable additional dimension for Flashinfer MLA and fix routing dtype
+37144 2026-03-16 [Model Runner V2] Fix processed logits in sample()
+37228 2026-03-26 [ROCM][Bugfix] Use correct stride in cp_mha_gather_cache_kernel for hybrid model (#37228)
+37291 2026-03-30 [Bugfix] Handle ParallelLMHead in compressed-tensors get_quant_method
+37331 2026-03-20 [Bugfix] Reject channelwise quantization (group_size <= 0) in ExllamaLinearKernel
+37465 2026-03-18 [Bugfix] Remove assertion for NVFP4 scale dynamic range
+37467 2026-03-30 [HMA]Move hybrid blksize to update_block_size_for_backend to fix attn supported block size is not 16 issue
+37547 2026-03-26 [Bugfix][ROCm] Fix lru_cache on paged_mqa_logits_module
+37565 2026-03-20 [Bugfix] Disable --calculate-kv-scales for hybrid GDN/Mamba+Attention…
+37639 2026-03-20 [Model Runner V2] Fix draft logits not populated during cudagraph replay
+37884 2026-03-23 [Bugfix] Fix RoBERTa position_ids accumulation on CUDA graph padding
+37940 2026-04-01 [NIXL][BUG] Fix Triton heterogeneous TP
+38040 2026-05-14 [Fix] Misc Fixes in ViT CUDA Graph
+38427 2026-04-02 [Bugfix] Enable batch-invariant Triton matmul on all Ampere GPUs (SM 8x) 
+38726 2026-04-17 [Bugfix][Core] Fix stuck chunked pipeline parallelism with async scheduling
+38771 2026-08-05 [Bugfix] Fix MLA kv_b_proj activation dtype with Marlin FP8
+38989 2026-04-09 [Bug] Fix routing bias dtype for trtllm per-block fp8 moe
+39064 2026-04-11 [Bugfix] Fix GDN FLA kernel crashes with NULL_BLOCK_ID=0 CUDA graph padding
+39717 2026-04-13 [Bugfix] Reject non-nvfp4 dtypes when using the flashinfer_nvlink_one_sided all2all backend
+39951 2026-04-16 [Model Runner V2][BugFix] fix num_sampled dtype for probabilistic rej…
+39988 2026-07-10 [Bugfix] Fix turboquant FP8 cast failure for BF16 models on Ampere GPUs
+40310 2026-04-22 [Bugfix] Fix W4A8_FP8 MoE tp>1 correctness and view() TypeError
+40390 2026-05-06 [Bugfix][Rocm]Aiter MoE re-uses existing tensor addresses after weight update.
+40651 2026-04-27 [Model Runner V2] Fix rejection sampling acceptance rate gap vs MRV1
+40734 2026-04-29 [Bugfix] Fix max_num_batched_token not captured in cuda graph 
+40737 2026-05-03 [Bugfix] Fix degenerate KV cache stride causing TMA cudaErrorIllegalInstruction
+40859 2026-04-28 [Bugfix ] fix bailing_moe_linear
+41049 2026-04-28 [Core] Fix redundant None append in StepPool.forward for chunked prefill
+41113 2026-04-29 [Bugfix] Fix rope 
+41119 2026-05-11 [ROCm][Bugfix]: dynamically align BLOCK_DMODEL with Lv in MLA decode kernel
+41148 2026-04-29 [Bugfix] Fix repeated DSv4 RoPE cache initialization
+41185 2026-04-29 [Bugfix] BailingMoeV2.5: rotate full qk_rope_head_dim in MLA RoPE
+41215 2026-05-20 [Bugfix] Use enable_sm120_family for per-tensor FP8 CUTLASS kernels on SM12.1
+41382 2026-05-12 [Bugfix] Fix double reduce in flashinfer_nvlink_two_sided and flashinfer_nvlink_one_sided backends
+41387 2026-05-06 [Fix] Add missing stubs from cpu fp8 attention changes
+41424 2026-05-03 [Bugfix] Fix FP8 Bias Loading
+41617 2026-05-10 [Bugfix][Mamba] IMA in causal_conv1d kernel for long sequences
+41689 2026-05-14 [XPU] Fix double-transpose in XPUFP8ScaledMMLinearKernel for W8A8 quant method
+41734 2026-05-06 Fix some legacy checkpoints with deprecated `rope_type` values
+41873 2026-05-21 [Bugfix] Zero stale is_prefilling in padded CUDA graph rows for Mamba
+41972 2026-05-07 [ROCm] Fix AITER AR+RMSNorm no-residual fusion
+42061 2026-05-09 [ROCm][Bugfix] Re-tag AITER MoE weights as preshuffled after replace_parameter
+42089 2026-05-08 [Bugfix] Fix FlashInfer CUTLASS MXFP4-MXFP8 MoE by restoring swizzled scale
+42175 2026-06-10 [Core][Model] Gemma4: Unified FA4 for all layers + FlashAttention mm_prefix support
+42233 2026-05-13 [Bugfix] Fix scipy audio resampling ratio
+42379 2026-05-30 [Bugfix] Fix RMSNorm kernels to multiply in weight's native dtype
+42388 2026-05-12 [UT][XPU] fix test_parallel_sampling due to global random state
+42430 2026-05-18 [Bugfix] mamba: run single-token extends as decodes
+42444 2026-05-14 [Model Runner V2][Bug Fix][DSV4] Ensure lazy attention state initializations happen during cudagraph capture
+42554 2026-06-04 [PD][Nixl] Mamba prefix caching mode support 
+42650 2026-05-22 [Bugfix] Source num_qo_heads from Attention layers in Flashinfer/Triton metadata builders
+42685 2026-05-15 [FlashAttn] Fix supports_kv_cache_dtype() accepting unhandled fp8 kv-cache dtype variants
+42739 2026-05-23 [Bugfix] Fix native Triton top-k/top-p kernel assumes contiguous logi…
+42869 2026-05-18 [BugFix] Kimi-K2.5: skip vision tower dtype conversion when using quantization
+42930 2026-05-18 [Bugfix] Fix DSV4 MTP after ROCm mHC integration
+42959 2026-06-02 [BugFix][kv_offload]: Prevent offloading stale sliding window blocks
+42978 2026-06-09 [ROCm][MLA][Bugfix] Reserve FP8 prefill workspace before lock for Kimi-K2.5
+43092 2026-07-06 [XPU] Fix CUDA API shims breaking Torch Dynamo during AOT compile
+43161 2026-07-07 [Bugfix] Fix UBatchWrapper CUDA graph key to sum all ubatches, not just first two
+43223 2026-05-21 Fix FlashInfer TRTLLM NvFP4 monolithic MoE routing
+43516 2026-05-26 [KV Connector][Bugfix] MooncakeStore: don't double-apply Eagle prune in load_mask
+43557 2026-06-15 Fix the E8M0 scale computation in the MXFP4 (W4A4) MOE CUTLASS kernel
+43669 2026-06-02 [Bugfix] flashinfer: fail fast when --kv-cache-dtype nvfp4 used on unsupported arch
+43680 2026-08-10 Fix uniform_random routing simulation to sample without replacement
+43926 2026-06-04 fix: keep DeepSeek V4 RoPE cache on inv_freq device
+43958 2026-06-18 [XPU] Fix FP8 block-scaled scheme selection on non-CUDA platforms
+43981 2026-06-15 [AMD][Bugfix][Quantization] Honor fused-name match in is_layer_skipped
+43988 2026-05-29 [Bugfix] Use storage_block_size in KV cache reshape for compressed specs (DeepSeek V4)
+44053 2026-06-22 [Bugfix][V1][TurboQuant] Reserve workspace before CUDA graph capture
+44253 2026-06-03 [Bug Fix][Model Runner V2][Spec Decode] Warmup & capture with different attention states for speculator prefil
+44434 2026-06-23 [ROCm][Bugfix][Perf] enable shared expert fusion for Qwen3.5
+44592 2026-06-12 [Bugfix] OffloadingConnector: respect skip_reading_prefix_cache flag
+44599 2026-06-12 [Bugfix] Mamba CPU Offloading
+44602 2026-06-18 fix(anthropic): preserve inline system message position for prefix caching
+44863 2026-07-13 [BugFix] Initialize model_config for Qwen3-VL MoE
+44892 2026-06-16 [DSV4][Minor] Fix supported KV cache dtypes
+45091 2026-09-03 Fix DeepSeek V4 FlashMLA auto KV cache dtype
+45227 2026-07-31 [Bugfix][ROCm] AITER MLA: size MTP verification decode metadata for real qlen/dtype
+45240 2026-06-12 [XPU][DeepSeek-V4] Fix MTP: sync with upstream fixes #44821 and #43746
+45252 2026-06-13 [Security] Fix DoS via prompt_embeds on M-RoPE models
+45361 2026-06-21 [Kernel][Bugfix] Fix INT8 per-token-head KV cache rounding in Triton reshape-and-cache
+45656 2026-06-18 [Bugfix] Restore is_sym guard for zp in GPTQ/CT MoE to fix symmetric quant regression
+45720 2026-06-17 [Bugfix][ROCm] Fix MiniMax-M3 FP8 KV cache dtype
+45758 2026-06-16 [XPU] Fix Triton attn fp8/bf16 check failing
+45782 2026-06-17 [ROCm][Bugfix]: Fallback GFX942 sparse MLA ops to Triton
+45956 2026-06-24 [Bugfix][Spec Decode] Fix probabilistic sampling for parallel drafting
+46069 2026-06-23 [CPU][Bugfix][Speculative Decoding] Accept USE_FP64_GUMBEL in CPU recovered-tokens sampler
+46202 2026-06-25 [CPU] Enable chunked prefill and prefix caching for qwen3.5
+46399 2026-10-17 [Bugfix][Spec Decode] Disable dynamic speculative decoding for fixed-K proposers instead of crashing
+46408 2026-06-24 [Bugfix] Support -1 (invalid/non-local) slots in topk_ids for Triton MoE
+46548 2026-06-24 [ROCm] Fix OOB During Model Warmup With `ROCM_ATTN` and MRV2
+46552 2026-06-28 [Bugfix] Transformers backend: recompute `mm_token_type_ids` per request for M-RoPE
+46685 2026-10-13 Fix write-after-write hazard in xpu KV RoPE triton kernel
+46754 2026-10-13 [ROCM][Bugfix] Deferring to TRITON_ATTN backend for Prefix lm models instead of ROCM_ATTN and fixed minor bug 
+46820 2026-06-26 Fix Transformers backend FP8 MoE and remove some boilerplate
+46845 2026-08-12 [Bugfix] Fix MiniMax-M3 compressed-tensors FP8 MoE SwiGLU params
+46997 2026-06-30 [Bugfix][ROCm][MLA] Pass q/kv dtypes to get_mla_metadata_v1 in FP8 decode
+47066 2026-06-30 [Model Runner V2][Spec Decode] Fix stale values in idx_mapping from CG num reqs padding
+47071 2026-07-01 [Bugfix] Fix pooled Whisper sliding-window KV sizing
+47074 2026-06-30 [Bugfix] Use larger workspace size for Flashinfer MLA LSE
+47158 2026-07-08 [ROCm] fixed aiter master flag and expert parallelism compatibility on minimax-m3-mxfp8
+47217 2026-07-03 [Bugfix][Gemma4] Keep image bidirectional attention within the sliding window
+47305 2026-07-01 [Bugfix] Don't read KV cache past `seq_len` in triton paged attn kernels
+47309 2026-07-16 [BugFix][MLA] Support kv_cache_dtype_skip_layers for MLA attention
+47332 2026-07-05 [Bugfix][Gemma4] Fix FA4 mm_prefix mask: add sliding window and absolute q_idx
+47381 2026-07-09 [Bugfix][Model Runner V2] Order uniform decodes first so spec decodes aren't misclassified as prefills
+47437 2026-07-02 [Bugfix] Fix pooled Whisper encoder sliding-window kernel size
+47445 2026-07-07 [BugFix] Fix ModelOpt quantization inference for fused siblings
+47464 2026-07-07 [Bugfix][Spec Decode] Skip uniform spec-decode padding for diffusion models
+47466 2026-07-07 [Bugfix] Fix PD disagg + MTP correctness for Qwen3.5(GDN)
+47574 2026-07-20 [Bugfix] Zero new KV blocks for quantized + sliding-window hybrid caches
+47597 2026-07-04 [Bugfix][Frontend] Preserve default sampling params in batch chat
+47609 2026-07-05 [Bugfix][TurboQuant] Preserve KV cache dtype in backend shape
+47630 2026-10-17 [Bugfix][OpenAI] Respect allowed_token_ids in beam search
+47716 2026-07-06 [Bugfix]Fix DeepSeek-V4 fp8_ds_mla KV cache reshape
+47871 2026-07-20 [CPU] fixes heterogeneous NIXL KV transfer into CPU_ATTN decode workers
+48010 2026-07-08 Fix embed scaling + CUDA graphs in Transformers modelling backend
+48039 2026-10-07 [Bugfix][Scheduler] Let pooling chunked prefill use full context
+48167 2026-07-15 [Bugfix] Fix FlashInfer non-causal draft attention (DFlash/DSpark) on Blackwell
+48251 2026-07-17 [Bugfix][Attention] Preserve post-load tensors across weight reloads
+48256 2026-07-13 [Bugfix][KV Cache] Don't route uniform-page-size MLA+SWA models into DeepseekV4 packing
+48261 2026-07-13 [BugFix][ModelRunner V2] Fix stale attn metadata in speculator prefill cudagraph capture
+48330 2026-07-12 [Bugfix] Guard mixed-dtype allreduce RMSNorm quant fusions
+48421 2026-10-22 [Bugfix][LoRA] Skip no-LoRA tokens (index -1) in CPU torch bgmv ops
+48428 2026-07-15 fix: size FlashInfer prefill workspace to batch head footprint
+48438 2026-07-30 [Bugfix] Preserve Marlin runtime tensor storage across weight reload
+48481 2026-07-16 [KV Connector] Fix PD async scheduling race condition for hybrid attn models
+48671 2026-07-15 [Bugfix][Spec Decode] Support heterogeneous QK fusion geometry
+48758 2026-08-07 [PD][NixlPush][Bugfix] Fix prefix caching
+48849 2026-07-17 Fix: Restore data_parallel_size > 1 for use_sequence_parallel_moe
+48861 2026-08-03 fix: NVFP4 quantization out_dtype should match model dtype, not torch default
+48956 2026-09-17 [Bugfix] Fall back to native sampling when FlashInfer cannot target the GPU
+49096 2026-07-27 Fix Humming non-gated MoE
+49139 2026-08-12 [Bugfix][Kernel] Fix persistent top-k histogram reuse after short rows
+49226 2026-07-26 [Bugfix][KVConnector] Disable cross-layer KV blocks for per-token-head quant
+49292 2026-07-21 Fix Qwen3-VL M-RoPE on the Transformers modeling backend (grids + compile)
+49343 2026-07-29 [BugFix] eagle draft max position embeddings
+49391 2026-07-23 [Bugfix][Spec Decode] Select earliest-completing stop string in check_stop_strings
+49435 2026-09-20 [Bugfix] Fix SM100 fp8_ds_mla cache scales
+49467 2026-07-22 [Bugfix] Fix DeepGEMM warmup when using `FlashInferFp8DeepGEMMDynamicBlockScaledKernel`
+49685 2026-09-22 [XPU] Fix Nemotron FP8 LM-eval config: drop CUDA-only moe_backend and wire to new Buildkite job
+49714 2026-07-28 [ROCm][Bugfix] Sanitize AITER paged-MQA logits before sparse top-k for DeepSeek-V4
+49757 2026-07-29 [BugFix] Stop dummy runs from writing mamba state through stale block-table rows
+49758 2026-08-11 [ROCm][MoE] Fix expert_map vs AITER expert_mask for non-AITER experts under EP
+49869 2026-09-02 [Model] Fix GLM-OCR MTP weight loading
+50005 2026-08-31 [Bugfix][DCP] Fix NVIDIA DeepSeek-V3.2 / GLM-5.2 fused attention
+50065 2026-07-28 [Bugfix][Spec Decode] Size DFlash query buffers for cudagraph-padded batches
+50194 2026-07-29 [CPU] Fix FP8 attention scratchpad sizing
+50220 2026-09-04 [Bug-fix] Fix MoE fused sum row offsets
+50272 2026-08-22 [Bugfix] Fix speculative decoding for short_conv (LFM2) models
+50294 2026-08-05 [Kernel][Model] Optimize FA4 mm_prefix range lookup
+50349 2026-07-31 [XPU] Fix FP8 block scale layout for MLA compatibility
+50386 2026-07-30 [Bugfix] Fix stale latent MoE residual pointer in CUDA graphs
+50444 2026-07-30 [compile] Fix fake kernel return dtype
+50455 2026-09-18 [ROCm][DSv4] Fix sparse-indexer logits collapse on gfx950/gfx942
+50488 2026-08-29 [Bugfix][Spec Decode] Capture the widest uniform decode batch by default
+50533 2026-07-31 [Bugfix][TurboQuant] Add KV quant mode for turboquant 
+50761 2026-08-02 [ROCm][Bugfix][Kimi-K3] Preserve MoE correction bias in FP32
+50769 2026-09-24 fix(config): apply presence_penalty/frequency_penalty from override-generation-config
+50802 2026-08-06 [ROCm] Fix AITER all-reduce fusion coverage
+50859 2026-08-04 [ROCm][AITER] Hotfix for `memory access fault` errors in AITER triton MOE routing
+50906 2026-08-04 [Bugfix][Attention] Guard sparse MLA masked MHA workspace
+51003 2026-08-04 [Bugfix][Build] Fix DeepGEMM CUDA 12.9 FP8 header visibility
+51011 2026-08-10 [ROCm][MLA] [K3] Fix fp8 KV cache decode on the AITER MLA backend
+51031 2026-08-24 [Bugfix][Kernel] Handle kernel block sizes in V2 DCP slot mapping
+51108 2026-08-06 [BugFix][KV Cache] Fix hybrid prefix caching with hidden-state extraction
+51161 2026-08-09 [Bugfix][KV Offload] Handle chunked local attention in offloading scheduler
+51203 2026-08-20 [Bugfix][MiniMax-M3] Keep FP8 query allocation stable across CUDA graph replay
+51363 2026-08-11 [Bugfix][Attention] Forward per-head FP8 descales through FA4
+51570 2026-08-21 [Rust][Benchmark] Load HF datasets from parquet shards via hf-hub, fixing truncated-cache sampling
+51837 2026-08-11 [Bugfix][ROCm] Give KV-first attention blocks their own page in hybrid models
+51852 2026-08-17 [Bugfix][CPU] Take an attention group's query head count from its layers
+51872 2026-08-12 [Bugfix][Triton] Make fp8_min/fp8_max constexpr in _quantize_pad_fp8_kernel
+51915 2026-09-22 [ROCm][Model][Bugfix] Enable GLM-5.2-MXFP4 on the deepseek_v32 path and fix sparse attention correctness
+51928 2026-08-12 [Bugfix][XPU] Run GDN attention as eager break under breakable cudagraph
+52005 2026-08-13 [Bugfix] Fix .../mrope.py::apply_interleaved_rope() when torch.compile is used in torch==2.13
+52148 2026-08-13 [Attention] Fix FlashInfer SM12x prefill with sinks
+52156 2026-09-08 [Bugfix] Apply attention sinks in the Transformers backend
+52288 2026-08-15 [Bugfix][Spec Decode] DSpark: inherit the target's attention backend when the speculative config names none
+52311 2026-08-16 [Bugfix][Model Runner V2][Spec Decode] Fix off-by-one in bad_words draft-prefix matching
+52356 2026-08-16 [Bugfix][ROCm] Skip FP8 MLA prefill PS-metadata build for chunked-context batches
+52500 2026-09-19 [Bugfix] Take padded path for ragged decode batches in sparse_attn_indexer
+52789 2026-08-22 [Perf] Support internal prefill checkpoints for Mamba prefix caching, 9%~25% TTFT improvement
+53017 2026-08-20 [Model Runner V2][Spec Decode] Fix draft logits cache column stride in gumbel_sample
+53456 2026-08-25 [Bugfix] Keep grid dims for XD-RoPE models on a prefix-cache hit
+53515 2026-08-26 BugFix(PCP): use persistent input buffers for PIECEWISE CUDA graphs
+53574 2026-08-31 [Bugfix][SM120] DSv4: pass contiguous C128A decode topk indices on SM120
+53581 2026-08-24 [Bugfix][Kimi K3] Skip absent metadata during CUDA graph profiling
+53598 2026-08-31 [ROCm][DSpark][DCP] Serve prefix cache hits under DCP for Kimi-K3
+53614 2026-09-06 [Kimi K3] Support internal prefix checkpoints with partial prefix caching and spec-decoding
+53790 2026-08-31 [Bugfix] NemotronHMTP: add hf_to_vllm_mapper so quant exclusions reach the MTP draft
+53856 2026-09-08 [Bugfix][ROCm] Mask paged attention V cache padding
+53877 2026-08-30 [Bugfix][Kernel] Keep packed GDN decode beta in FP32
+53914 2026-09-17 [BugFxi] Fix DeepGEMM FP8 workspace over allocation
+53955 2026-08-27 [Bugfix] Release CUDA graph profiling memory before KV cache allocation
+54048 2026-08-30 [Bugfix][MoE] Enable cuBLAS out_dtype router GEMM on all CUDA archs (fixes family-120/GB10)
+54163 2026-10-23 [Bugfix][Spec Decode] DFlash/DSpark no longer drop the last prefix-cache block (mamba align context recompute)
+54282 2026-08-29 [Bugfix][Model Runner V2][Spec Decode] Decouple the draft's gumbel noise stream from the target's
+54324 2026-08-30 [Bugfix] Validate scale-out transfer params
+54346 2026-08-30 [Bugfix][Multimodal] Release Qwen2.5-VL and Qwen3-VL RoPE caches with the model
+54362 2026-09-06 [Bugfix][KV Offload] Fix SWA store reachability during chunked prefill
+54418 2026-08-30 [Bugfix][Spec Decode] Keep default CUDA graph sizes memory-safe
+54427 2026-08-30 [Bugfix][Quantization][MoE] Route weight only NVFP4 checkpoints through W4A16
+54642 2026-10-22 [Bugfix] Include multimodal limits in the model compile-cache hash
+54699 2026-09-17 [Bugfix][MoE] Convert FlashInfer BF16 weights in place
+54747 2026-09-02 [Bugfix] Handle padded routes in CUTLASS MoE permutations
+54782 2026-09-02 [Bugfix] Raise for unavailable piecewise CUDA graphs
+54788 2026-09-08 [Bugfix][Spec Decode] Honour the draft's moe_backend on Model Runner V2
+54815 2026-09-02 [Bugfix] Fix RoPE construction for deepseek-v4 sparse SWA layers
+54824 2026-09-01 [Bugfix] Restore `weight_dtype` in `QuarkW8A8Fp8MoEMethod` to fix GPT-OSS FP8 MoE weight loading
+54882 2026-09-03 [Bugfix][Model] Fix FP8 PLE loading in mixed ModelOpt checkpoints
+54917 2026-09-07 [Bugfix][Gemma] Conditionally create KV projections/norms on KV-shared layers
+55027 2026-09-14 [Bugfix][KV Connector] MooncakeStore: exclude non-prefix-cacheable (QSA ring) groups; fix align-mode check
+55053 2026-10-07 [Bugfix][KV Connector][ROCm] Fix MoRI-IO KV block-offset for speculative decoding (MTP)
+55095 2026-09-11 [Bugfix] Fall back to full decode graphs for noncompiled models
+55112 2026-10-27 [Bugfix][Core] Copy every overlaid KV view in copy_kv_cache_blocks_inplace
+55178 2026-09-04 [Bugfix] Preserve Mamba state for padded prompt tails
+55222 2026-09-29 [Bugfix] GLM-5.3-Flash: fp8 plan dtype on SM90 sparse MLA, and right-size the indexer prefill workspace
+55239 2026-09-11 [ROCm][Bugfix] Route GLM-5.3-Flash MTP through ragged sparse MLA
+55270 2026-09-25 [Bugfix] GLM-5.3-Flash: launch the kpool paged MQA logits in the varlen mode its schedule was built with
+55310 2026-09-09 [Bugfix][LoRA] Log when an adapter applies no weights
+55370 2026-09-09 [Bugfix] Make `mm_device_do_normalize` encoder-cudagraph safe
+55377 2026-09-08 [Bugfix] Autotune FlashInfer deferred MoE decode kernels before CUDA graph capture
+55442 2026-09-22 [Bugfix][Model][Spec Decode] Defer disposable GLM MTP head
+55513 2026-09-08 [Bugfix][Model] Fix block FP8 MTP in ModelOpt mixed checkpoints
+55528 2026-09-25 [Bugfix][KV Cache][MLA] Align packed block strides for V3.2 sparse MLA
+55538 2026-09-14 [Bugfix][DSA] Write nvfp4_ds_mla from the fused norm+rope kernel
+55548 2026-09-11 [Bugfix][LoRA] Use stored rsLoRA scaling factor in MoE expert packing
+55579 2026-09-10 [Bugfix][MoE] Fix batched CUTLASS workspace overallocation
+55601 2026-10-07 [Bugfix] Seed hybrid mamba state index with mamba_block_size on prefix-cache hits
+55643 2026-09-08 [Bugfix] Fix NVFP4 fused SiLU+mul scale allocation and global scale direction
+55774 2026-09-08 [Kimi Bug] Fix kimi k3 startup cuda graph issue with recoverSSM
+55884 2026-09-16 [BugFix] Fix is_supported of cutlass FP8 linear (selected and fails on A100)
+55949 2026-09-08 [Bugfix] Handle null RoPE parameters for NoPE layers
+56020 2026-09-25 [Bugfix][LogitsProcessor] Validate ':' separator in custom logits processor FQCN
+56027 2026-10-09 [XPU] fix online fp8_per_channel quantization
+56054 2026-10-15 [Bugfix][DSv4] Remap Quark MTP layer_quant_config onto draft prefixes
+56168 2026-09-24 [Bugfix][CPU][MoE] Fix out-of-bounds write and segfault when router weights are fp32
+56181 2026-09-11 [BugFix] Fix DP token padding in dflash attention metadata
+56198 2026-10-05 [Bugfix][Attention] Support int4_per_token_head on non-power-of-two head sizes
+56305 2026-09-13 [Attention] Add Triton/FlashInfer composite for multimodal prefix attention
+56359 2026-09-17 [Fix][ROCm] MXFP4 MoE round-up inflates TP-sharded expert weights on CDNA3, starving KV cache
+56387 2026-09-15 [Bugfix][Spec Decode][MoE] Avoid uninitialized EPLB state in DeepSeek V4.1 DSpark drafter
+56433 2026-09-11 [ROCm][Bugfix] Fix AITER preshuffled FP8 block-scale kernel
+56447 2026-09-11 [Bugfix] Fix GLM-OCR MTP position masking during CUDA graph capture
+56452 2026-09-12 [Bugfix] Fix DeepGEMM FP8 warmup coverage
+56456 2026-09-18 [Bugfix][MRV2] Match fast-prefill padding to active LoRA batches
+56486 2026-09-15 [Bugfix][KV Offload] Ignore pending chunks in invalid sliding windows
+56691 2026-10-04 [Bugfix][Multimodal] Normalize single-channel audio to 1D
+56709 2026-09-16 [Bugfix][KV Offload] Restore MTP-retained sliding-window history
+56734 2026-09-21 [Bugfix][Spec Decode] Stop dummy draft decode steps from writing KV through stale block-table rows
+56773 2026-09-14 [Bugfix][CPU] Fix DeepSeek-R1 (FP8 MLA + MoE) correctness on CPU backend
+57027 2026-09-15 [Bugfix][HiSparse] Preserve per-layer offsets in KV cache bindings
+57092 2026-10-23 [Bugfix] Make online FP8 MoE experts batch-invariant under VLLM_BATCH_INVARIANT
+57108 2026-10-10 [Bugfix][ModelLoader] Make enable_weights_track check quantized layers
+57163 2026-09-29 [Bugfix][Quantization] Stop sleep(level=2) from zeroing compressed-tensors KV scales
+57189 2026-09-17 Fix Laguna patch mutating flat RoPE parameters
+57229 2026-09-17 [ROCm][Bugfix] Reduce CUDA graph divergences
+57432 2026-09-17 [Bugfix][DSv4.1] Fix FlashInfer DSpark non-causal attention
+57462 2026-09-20 [Bugfix] DiffusionGemma: cast the self-conditioning soft embed to the buffer dtype
+57508 2026-09-19 [Bugfix][Model] Fix MiMo-V2.5 fused fp8 qkv_proj sharding (pre-shard count is num_key_value_heads; MTP path to
+57575 2026-09-18 [Bugfix][MLA] Reserve sparse prefill buffers before KV cache sizing
+57926 2026-10-26 [Bugfix][Core][MRV2] Profile the sampler with the params the warm-up actually uses
+58021 2026-09-29 [Bugfix] Reject a prefix_match_unit that a single KV cache group cannot honor
+58064 2026-10-14 [Bugfix][Transformers backend] Fix CUDA graph capture for dynamic-rope models
+58089 2026-09-23 [ROCm][Bugfix] Keep zero MiniMax MXFP8 activation blocks finite
+58092 2026-09-23 [ROCm][Bugfix] Register MRV2 sampler JIT warmups
+58142 2026-09-29 [Bugfix][Model] MiMo: keep fused fp8 qkv_proj pairing state across weight-loading calls
+58184 2026-10-20 [Bugfix][Model] MiMo-V2: skip fused fp8 qkv_proj tensors for layers the model does not have
+58215 2026-09-24 [Bugfix][DSA] Bound DeepSelect sentinel columns in the sparse top-k remap
+58231 2026-10-19 [Bugfix][Sampler] Fix split top-p masking every token for huge logits (thinking_token_budget + spec decode emi
+58287 2026-09-23 [Bugfix] Disable prefix caching for encoder-only before model config hooks
+58304 2026-10-22 [Bugfix][Attention] Fix FA4 FP8 descale strides for singleton KV heads
+58427 2026-09-24 [Bugfix][Quantization] Add Humming to the W4A8 (INT4xFP8) MoE oracle
+58472 2026-09-24 [KV Connector] Fix DecodeBench fp8 fill values and add a startup fill mode
+58648 2026-09-30 [Bugfix][MiniMax M3] Share target embeddings with MTP under PP
+58725 2026-09-30 [Bugfix][HiSparse] Stop the host pool feeding device KV cache residency metrics
+58887 2026-10-01 [Bugfix][ROCm] Fix race on AITER MLA FP8 prefill scheduling metadata under async scheduling
+58890 2026-10-03 [Bugfix][Model] Fix M-RoPE offset double-count in Qwen3-Omni
+58904 2026-09-29 [ROCm][Model][Bugfix] Fix GLM-5.2 shared-expert fusion and MTP on the ROCm DSA path
+58950 2026-09-28 [Bugfix] Fix moe_wna16 w13 zero-point shard split for 8-bit asym GPTQ MoE
+58961 2026-09-28 [Bugfix][Qwen4Exp] Release the profiling KV cache held by QSA key views
+59026 2026-10-12 [Bugfix] Read Ling quantization_config from top-level config for Bailing V3 VL
+59031 2026-10-05 [Bugfix] Load stacked expert weights for non-gated MoE
+59042 2026-10-12 [Bugfix][MoE] Apply expert_map remapping for CUTLASS FP4 MOE expert parallel
+59105 2026-10-05 [Bugfix][Spec Decode] Reserve the bonus KV slot for fill-in DSpark
+59147 2026-10-11 [Bugfix][GLM-5.3-Flash] Honor `--mamba-ssm-cache-dtype` for the KDA recurrent state
+59166 2026-10-13 [Bugfix] Fix DSpark graph-padding handling in the DeepSeek-V4.1 MoE fused top-k
+59223 2026-10-25 [Bugfix] Preserve FP8 indexer WK pairs across load_weights calls
+59286 2026-09-30 [Bugfix][Frontend] Reject LoRA adapters named after a served model
+59392 2026-10-27 [Bugfix][Attention] Fix FlashInfer MLA DCP decode on ragged spec-decode batches
+59412 2026-10-08 [Bugfix][ROCm] Select page-aligned kernel blocks for pooled indexers so the block table addresses storage page
+59420 2026-10-09 [ROCm][Bugfix] Pass per-sequence context lengths to the AITER paged MQA-logits kernels
+59443 2026-10-05 [Bugfix][Qwen4Exp] Load PLE tables unquantized under Quark checkpoints
+59454 2026-10-01 [Bugfix][ROCm] Use a zero default for masked scales in the MXFP8 GEMM
+59494 2026-10-01 [Bugfix][HiSparse] Fix a chunked-prefill preemption livelock
+59550 2026-10-04 [ROCm][Bugfix] Fix ROCM_ATTN sliding-window boundary
+59655 2026-10-08 [Bugfix] [Spec Decode]   DeepSeek V4/V4.1 NVFP4: keep ignored MTP/DSpark experts on MXFP4
+59709 2026-10-13 [Bugfix][DSv4] Don't bake the C128 compressor skip into CUDA graphs
+59717 2026-10-23 [Bugfix][MoE] Remap invalid topk_ids in moe_permute without expert_map
+59733 2026-10-08 [Bugfix][Kimi-K3] Declare max_tp_shards on the DSpark MLA KV cache spec
+59751 2026-10-06 [Bugfix][Attention] Restrict FlashInfer sparse MLA FULL graphs to decode
+59759 2026-10-06 [Bugfix][Core] Retire stale Mamba spec blocks in prefill checkpoint steps
+59779 2026-10-02 [Bugfix][Watermarking] Keep draft prompt lengths valid under CUDA graphs
+59842 2026-10-06 [Bugfix][Model] Fix Qwen3-Omni interleaved M-RoPE boundary positions
+59900 2026-10-12 [Bugfix] Drop enable_in_kernel_fc2_reduce from FlashInfer CuteDSL MegaMoE config
+59931 2026-10-26 [Bugfix] Preserve fp16 in legacy fused MoE LoRA
+59985 2026-10-13 [Bugfix] Keep GateLinear batch invariant under VLLM_BATCH_INVARIANT
+59986 2026-10-27 [Bugfix][Attention] Keep DSV4.1 sparse prefill out of FULL cudagraphs
+60142 2026-10-06 [Bugfix] Fix Qwen4Exp FP8 PLE pinned lookup kernel failing to compile below SM89
+60156 2026-10-08 [Bugfix][Attention] Preserve small FP8 softmax weights in Triton attention
+60179 2026-10-19 [Bugfix][Weight Cache] Key non-MoE DP daemons as DP=1 like the engine
+60187 2026-10-10 [Bugfix][Model] K-EXAONE: restore loading of pre-2.0 configs and apply RoPE to the MTP layer
+60210 2026-10-07 [Bugfix] Index Mamba align state copies by request slot in MRV2
+60219 2026-10-13 [Bugfix] Fall back to auto for unquantized MoE layers when --moe-backend is marlin
+60225 2026-10-09 [Bugfix][LoRA] Reject PEFT adapter features vLLM does not implement
+60240 2026-10-06 [Bugfix] Warn only on per-request do_normalize/do_rescale overrides
+60271 2026-10-08 [Bugfix] Check batch-invariance support for every attention backend
+60307 2026-10-07 [Bugfix][Frontend] Honor default penalties in batch chat completions
+60337 2026-10-07 [Bugfix][Quantization] Accept folded NVFP4 scales for Humming A16
+60364 2026-10-08 [Bugfix] Don't int-sort attention-type names in --kv-cache-dtype-skip-layers for packed KV dtypes
+60388 2026-10-08 [Bugfix][ROCm] RDNA3 W4A16 MoE: handle the N-first CT weight layout
+60411 2026-10-08 [Bugfix][Quant] Read safetensors headers of checkpoints with other file names
+60447 2026-10-08 [Bugfix][MoE] Size the permute scratch from its inputs
+60501 2026-10-08 [Bugfix] Fix ZeroDivisionError in Qwen3-VL video sampling when the source fps is unknown
+60513 2026-10-25 [Bugfix][Spec Decode] Keep speculator limits in sync after auto-fit
+60514 2026-10-27 [Bugfix] Fall back from DeepGEMM and FlashInfer sampling when nvcc is missing
+60524 2026-10-13 [Bugfix] Keep compressed-tensors wNa16 linear layers batch invariant
+60533 2026-10-08 [Bugfix][Prefix caching] Fix inconsistent hybrid Mamba prefix cache boundaries
+60613 2026-10-23 [Bugfix][DSv4.1] Seed the -1 sentinel in the prefill sparse index workspace
+60733 2026-10-13 [Bugfix][MoE] Clamp BLOCK_SIZE_K to the FP8 quantization block in the batched Triton MoE
+60763 2026-10-09 [Bugfix][Spec Decode] Fix GLM-5.3-Flash DFlash2/EAGLE3 aux hidden-state capture with the upstream config
+60767 2026-10-19 [Bugfix][V1] Null sliding-window block-table entries below the window
+60797 2026-10-13 [Bugfix][Mamba] Store conv_kernel - 1 inputs in Mamba2 prefill checkpoints
+60907 2026-10-14 [ROCm][Bugfix][MLA] Fix FP8 MLA prefill unpad for interleave-padded heads
+60946 2026-10-15 [Bugfix][PCP] Align MoE routing padding with gathered tokens
+60994 2026-10-19 [Bugfix][Weight Cache] Include RoPE parameters in IPC cache key
+61012 2026-10-11 [Bugfix][Mooncake] Use the EAGLE replay boundary when retaining sliding-window tails
+61013 2026-10-11 [Bugfix][MRV2] Fix FlashInfer attention and ReplaySSM warmups on MRV2
+61041 2026-10-12 [Bugfix][DSv4.1] Match decoder-replay input_ids dtype for FlashInfer MegaMoE
+61061 2026-10-11 [Bugfix] Respect the configured offline chat template
+61079 2026-10-12 [Bugfix][GLM-5.3-Flash] Restore MTP index sharing across draft iterations
+61104 2026-10-13 [Bugfix][Model] Fix EXAONE-4.5 image inputs: ViT received un-normalised pixels
+61108 2026-10-12 [Fix][Compile] Declare group_shape in the static FP8 quant fusion …
+61118 2026-10-17 [Bugfix] Enable inductor batch-invariant mode under VLLM_BATCH_INVARIANT
+61125 2026-10-14 [Bugfix] Bump tokenspeed-mla to 2.0.2 to fix nanobind conflict with Triton 3.9
+61174 2026-10-17 [Bugfix][Spec Decode] Clear stale shared block-table rows
+61235 2026-10-13 [Bugfix][LoRA] Slice expert LoRA by the unpadded per-rank size under TP
+61240 2026-10-12 [Bug] Honor spec decode draft model config
+61329 2026-10-19 [CPU] Fix underflow in FP8 AMX attention
+61388 2026-10-16 [Bugfix][MoE] Restore TP-sharded routed-expert capture for DP=1
+61401 2026-10-13 [Bugfix] Load and apply Nemotron Super final vision LayerNorm
+61465 2026-10-19 [Bugfix] Require cudnn-frontend >=1.31.0: cuDNN could replay an unloaded kernel from a CUDA graph
+61496 2026-10-14 [Bugfix][MRV2] Capture DCP FULL cudagraphs with KV context
+61509 2026-10-23 [Bugfix][MRV2] Don't count adaptive verification profiling cache as CUDA graph memory
+61563 2026-10-14 [Bugfix][MRV2][Spec Decode] Honor EAGLE3 single-state draft configuration
+61634 2026-10-14 [Bugfix][Attention] Make the query contiguous for TRTLLM ragged MLA prefill
+61636 2026-10-26 [Bugfix][LoRA] Fix double pinning of 3D MoE LoRA and EP dummy LoRA sizing
+61642 2026-10-14 [Bugfix] Fix TP loading of small block-FP8 MLA gates in BailingMoeV3
+61643 2026-10-15 [Bugfix][MoE] Keep routing rows during DeepSeek V4.1 decoder replay
+61716 2026-10-16 [Bugfix][Kernel] silu_and_mul_quant: run the vectorized loop
+61726 2026-10-19 [Bugfix][ROCm][MoRIIO] Support heterogeneous TP in WRITE mode for all attention and mamba layers
+61749 2026-10-22 [Bugfix][MoE] Require exact strides for moe_forward custom ops
+61758 2026-10-21 [Bugfix] Include KV cache quantization settings in IPC weight cache key
+62046 2026-10-17 [Bugfix][Sampler] Carry the boundary tie count across blocks in the split top-p mask kernel
+62133 2026-10-27 [Bugfix][Kernel] Fix OAI Triton MXFP4 MoE on SM110
+62206 2026-10-19 [Bugfix][Core] Keep the EAGLE-reachable SWA tail at a shared-prefix junction
+62224 2026-10-19 [Bugfix][LoRA] Apply text-only LoRAs to the LM of multimodal wrappers
+62274 2026-10-18 [Bugfix][ROCm] Only set inductor batch_invariant when torch has it
+62301 2026-10-26 [Bugfix][Spec Decode] Preserve DP replica index for standalone draft models
+62318 2026-10-27 [Bugfix][Model] Qwen3.8-Flash-Next: load checkpoints with quantized q/k/v and a BF16 QSA indexer
+62358 2026-10-20 [Bugfix][LoRA] Restore LoRA state on wake-up from level-2 sleep
+62467 2026-10-19 [Bugfix][Kernel] persistent_topk: don't select float4 tail lanes past the row length
+62665 2026-10-22 [Bugfix][CPU] Reject unsupported --kv-cache-dtype at CPU attention backend selection
+62796 2026-10-28 [Bugfix][Spec Decode] Align adaptive draft prefill graph padding
+62841 2026-10-23 [Bugfix][Mamba] Avoid re-marking committed prompt-tail boundaries as cached this step
+62859 2026-10-21 [Bugfix][Pooling] Reject multimodal inputs in chunked embeddings
+62906 2026-10-22 [Bugfix] Apply default multimodal LoRA per batch conversation
+62928 2026-10-22 [Bugfix][Frontend] Normalize beam search scores by generated length
+62980 2026-10-22 [Bugfix] Support online quantization of Kimi K3 NVIDIA projections
+63099 2026-10-26 [Bugfix][ROCm] Match the DeepSeek-V4.1 FP8 config in the shared-expert FSE compatibility check
+63266 2026-10-25 [Bugfix][KV Offload] Reject misaligned chunked-local CPU suffix hits
+63319 2026-10-24 [Bugfix][LoRA][MoE] Process reloaded weights of LoRA-wrapped MoE layers
+63339 2026-10-23 [Bugfix][CPU] Match GPU conv-state layout in GDN spec decode
+63409 2026-10-27 [ROCm][Bugfix][Kimi-K3] Pass zero positions to the fused MLA decode q-prep kernel
+63436 2026-10-26 [Bugfix][Spec Decode] DFlash: run the aux hidden state FC in the draft dtype
+63475 2026-10-26 [Bugfix][Kernel] persistent_topk: sync the CTA around radix barrier arrivals
+63652 2026-10-26 [Bugfix][KV Offload] Do not store sliding-window chunks with null blocks
+63735 2026-10-27 [Bugfix][Perf][ROCm] RDNA launch config for kernel_paged_attention_2d
+63738 2026-10-27 [Bugfix][CPU] Run encoder-only attention bidirectionally in CPU_ATTN
+63914 2026-10-28 [Bugfix][DSv4.1] Keep the specialized decode's FlashInfer paths on newer FlashInfer
