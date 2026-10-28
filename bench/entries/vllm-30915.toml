@@ -1,0 +1,19 @@
+id = "vllm-30915"
+kind = "commit-pair"
+summary = "FlexAttention maps a physical block back to the wrong logical block when sliding-window layers free and reuse blocks"
+fix_pr = "https://github.com/vllm-project/vllm/pull/30915"
+buggy = "e3ab93c89667bcd026582e74bc7c49774724a273"
+fixed = "11a89cf95caaec8dec13fab1e8e3d64c9a852a08"
+how_found = "user report: gemma-3-4b repeats 'hi' on a 70k-token prompt"
+
+# An ungated mirror of google/gemma-3-270m-it. Its 512-token sliding window is shorter
+# than the 5-shot prompts, so out-of-window blocks are freed and can be reused.
+model = "unsloth/gemma-3-270m-it"
+workload = "gsm8k-5shot"
+
+[engine]
+enforce_eager = true
+gpu_memory_utilization = 0.55
+max_model_len = 2048
+max_num_seqs = 32
+attention_backend = "FLEX_ATTENTION"

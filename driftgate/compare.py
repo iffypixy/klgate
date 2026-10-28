@@ -7,8 +7,6 @@ lists hold plus one bucket for the rest, which by the data-processing inequality
 exceeds the true KL.
 """
 
-import itertools
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -48,39 +46,21 @@ def prompt_diff(a: Run, b: Run, i: int) -> PromptDiff:
     differ = np.nonzero(a.tokens[i, :n] != b.tokens[i, :n])[0]
     diverged = len(differ) > 0 or a.lengths[i] != b.lengths[i]
     stop = differ[0] + 1 if len(differ) else n
-    kls = [bucketed_kl(a.top_ids[i, t], a.top_lp[i, t], b.top_ids[i, t], b.top_lp[i, t]) for t in range(stop)]
-    return PromptDiff(float(np.mean(kls)) if kls else 0.0, int(stop), diverged)
+    if stop == 0:
+        return PromptDiff(0.0, 0, diverged)
+    kls = bucketed_kl(a.top_ids[i, :stop], a.top_lp[i, :stop], b.top_ids[i, :stop], b.top_lp[i, :stop])
+    return PromptDiff(float(kls.mean()), int(stop), diverged)
 
 
-def bucketed_kl(ids_a: np.ndarray, lp_a: np.ndarray, ids_b: np.ndarray, lp_b: np.ndarray) -> float:
-    common, ia, ib = np.intersect1d(ids_a, ids_b, assume_unique=True, return_indices=True)
-    pa, pb = np.exp(lp_a[ia].astype(np.float64)), np.exp(lp_b[ib].astype(np.float64))
-    tail_a, tail_b = max(1 - pa.sum(), TailFloor), max(1 - pb.sum(), TailFloor)
-    return float(np.sum(pa * (np.log(pa) - np.log(pb))) + tail_a * np.log(tail_a / tail_b))
-
-
-def summarize(diffs: list[PromptDiff]) -> str:
-    kl = np.array([d.kl for d in diffs])
-    diverged = sum(d.diverged for d in diffs)
-    return (
-        f"mean KL {kl.mean():.2e}  median {np.median(kl):.2e}  max {kl.max():.2e}  "
-        f"diverged {diverged}/{len(diffs)}"
-    )
-
-
-def main() -> None:
-    """Usage: compare.py base_dir cand_dir — every run pair within and across the two."""
-    base = sorted(Path(sys.argv[1]).glob("*.npz"))
-    cand = sorted(Path(sys.argv[2]).glob("*.npz"))
-    runs = {p: load(p) for p in base + cand}
-    for label, pairs in [
-        ("base vs base", itertools.combinations(base, 2)),
-        ("cand vs cand", itertools.combinations(cand, 2)),
-        ("base vs cand", itertools.product(base, cand)),
-    ]:
-        for x, y in pairs:
-            print(f"{label}  {x.stem} {y.stem}  {summarize(compare(runs[x], runs[y]))}")
-
-
-if __name__ == "__main__":
-    main()
+def bucketed_kl(ids_a: np.ndarray, lp_a: np.ndarray, ids_b: np.ndarray, lp_b: np.ndarray) -> np.ndarray:
+    """KL(a || b) per position over [positions, k] top-k lists, on their shared ids plus one bucket."""
+    match = (ids_a[:, :, None] == ids_b[:, None, :]) & (ids_a[:, :, None] >= 0)  # [S, k, k]
+    shared = match.any(axis=2)  # a's ids that b also lists
+    pa = np.exp(lp_a.astype(np.float64))
+    pb = (match * np.exp(lp_b.astype(np.float64))[:, None, :]).sum(axis=2)  # b's prob of a's id
+    pa_s, pb_s = np.where(shared, pa, 0.0), np.where(shared, pb, 1.0)
+    tail_a = np.maximum(1 - pa_s.sum(axis=1), TailFloor)
+    tail_b = np.maximum(1 - np.where(shared, pb, 0.0).sum(axis=1), TailFloor)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        terms = np.where(shared, pa_s * (np.log(pa_s) - np.log(pb_s)), 0.0)
+    return terms.sum(axis=1) + tail_a * np.log(tail_a / tail_b)

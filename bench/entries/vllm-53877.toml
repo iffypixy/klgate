@@ -1,0 +1,18 @@
+id = "vllm-53877"
+kind = "commit-pair"
+summary = "Packed gated-DeltaNet decode kernel rounds beta to bf16 before the recurrent update, so error compounds over decode steps"
+fix_pr = "https://github.com/vllm-project/vllm/pull/53877"
+buggy = "87b9b5b8d9dadc3edb31efa6ea71ee7d49d0bdcd"
+fixed = "56058fd572f6a7fec6899385f4a4ed7f4b964477"
+how_found = "code reading; fix PR reports kernel 0.62109 vs FP32 reference 0.62246 on a regression input"
+
+model = "Qwen/Qwen3.5-0.8B"
+workload = "gsm8k-5shot"
+
+# Text only: no image or video inputs, so the vision encoder is not profiled.
+[engine]
+enforce_eager = true
+gpu_memory_utilization = 0.6
+max_model_len = 2048
+max_num_seqs = 32
+limit_mm_per_prompt = { image = 0, video = 0 }

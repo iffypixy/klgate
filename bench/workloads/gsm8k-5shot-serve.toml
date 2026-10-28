@@ -1,0 +1,7 @@
+# The same requests as gsm8k-5shot, served over HTTP with 32 in flight, so batch
+# composition varies run to run as it does in production.
+mode = "serve"
+concurrency = 32
+prompts = "bench/prompts/gsm8k-5shot.jsonl"
+max_tokens = 256
+stop = ["Question", "Assistant:", "<|separator|>"]
