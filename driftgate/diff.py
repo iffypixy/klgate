@@ -1,16 +1,21 @@
 """Does a candidate vLLM build change a model's outputs beyond rerun noise?
 
-Usage: python -m driftgate.diff <baseline sha> <candidate sha> --model NAME [--engine JSON] [--env KEY=VALUE ...]
+Usage: python -m driftgate.diff <baseline> <candidate> --model NAME [--engine JSON] [--env KEY=VALUE ...]
+
+Each build is a vLLM tag, branch or commit: v0.20.0, main, 124fac10.
 
 Runs 5 baseline and 3 candidate engines, alternating, on the diff workload. Each candidate
 run is scored by its median KL to the baseline runs, over the median KL between baseline
 runs. The verdict uses the middle candidate score: an occasional launch lands in a slightly
 different numeric state and disagrees with every other run, but a real change shows in
-every candidate run. "Changed" means the outputs moved, not that they got worse; accuracy
-is shown for context.
+every candidate run. Off launches are common enough that two of three can land together,
+so a first-round "changed" is confirmed with 3 more candidate runs and the middle of all 6
+decides. "Changed" means the outputs moved, not that they got worse; accuracy is shown for
+context.
 """
 
 import argparse
+import hashlib
 import itertools
 import json
 import re
@@ -26,10 +31,10 @@ from driftgate.compare import Run, compare, load
 from driftgate.run import Root, capture, hardware
 
 BaselineRuns = 5
-CandidateRuns = 3
-# The 95th percentile of the score on unchanged code, at these run and prompt counts, was at
-# most 1.22 across 4 models on 2 GPUs (reruns of one build, and commit pairs that change no
-# engine code), rounded up.
+CandidateRuns = 3  # per round; a first-round "changed" adds a second round
+# Set on unchanged code (reruns of one build, and commit pairs that change no engine code)
+# across 4 models on 2 GPUs: with the confirmation round, at most 1.5% of checks on any of
+# them say "changed". `python -m driftgate.threshold` replays it.
 Threshold = 1.25
 Shown = 5  # most-changed prompts to print
 
@@ -51,8 +56,8 @@ class Verdict:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("baseline", help="full commit sha of the build you trust")
-    ap.add_argument("candidate", help="full commit sha of the build to check")
+    ap.add_argument("baseline", type=build.resolve, help="the vLLM build you trust: a tag, branch or commit")
+    ap.add_argument("candidate", type=build.resolve, help="the vLLM build to check")
     ap.add_argument("--model", required=True)
     ap.add_argument("--engine", default="{}", help="json of engine arguments, e.g. '{\"max_model_len\": 2048}'")
     ap.add_argument("--env", action="append", default=[], type=env_var, metavar="KEY=VALUE", help="environment for both builds")
@@ -62,18 +67,30 @@ def main() -> None:
     setup = spec | {"model": args.model, "engine": json.loads(args.engine), "env": dict(args.env)}
     for sha in (args.baseline, args.candidate):
         build.install(sha)
-    out = Root / "runs" / hardware() / "diff" / f"{args.baseline[:12]}-{args.candidate[:12]}-{slug(args.model)}"
-    for i in range(max(BaselineRuns, CandidateRuns)):
-        for side, sha, n in (("baseline", args.baseline, BaselineRuns), ("candidate", args.candidate, CandidateRuns)):
+    # Runs from different engine settings must never mix, so the settings name the folder.
+    fingerprint = hashlib.sha256(json.dumps(setup, sort_keys=True).encode()).hexdigest()[:8]
+    out = Root / "runs" / hardware() / "diff" / f"{args.baseline[:12]}-{args.candidate[:12]}-{slug(args.model)}-{fingerprint}"
+
+    base, cand = collect(args, setup, out, CandidateRuns)
+    first = judge(base, cand)
+    if first.changed:
+        print(f"the first {CandidateRuns} candidate runs read {first.score:.2f}×; confirming with {CandidateRuns} more", flush=True)
+        base, cand = collect(args, setup, out, 2 * CandidateRuns)
+    print(render(args, setup, base, cand, judge(base, cand)))
+
+
+def collect(args: argparse.Namespace, setup: dict, out: Path, candidates: int) -> tuple[list[Run], list[Run]]:
+    """Capture whichever runs are missing, alternating the two builds, and load them."""
+    for i in range(max(BaselineRuns, candidates)):
+        for side, sha, n in (("baseline", args.baseline, BaselineRuns), ("candidate", args.candidate, candidates)):
             path = out / side / f"{i}.npz"
             if i < n and not path.exists():
                 path.parent.mkdir(parents=True, exist_ok=True)
                 print(f"{side} run {i + 1}/{n}", flush=True)
                 capture(setup, sha, path)
-
     base = [load(out / "baseline" / f"{i}.npz") for i in range(BaselineRuns)]
-    cand = [load(out / "candidate" / f"{i}.npz") for i in range(CandidateRuns)]
-    print(render(args, setup, base, cand))
+    cand = [load(out / "candidate" / f"{i}.npz") for i in range(candidates)]
+    return base, cand
 
 
 def judge(base: list[Run], cand: list[Run]) -> Verdict:
@@ -90,8 +107,7 @@ def judge(base: list[Run], cand: list[Run]) -> Verdict:
     return Verdict(noise, scores, per_prompt)
 
 
-def render(args: argparse.Namespace, setup: dict, base: list[Run], cand: list[Run]) -> str:
-    v = judge(base, cand)
+def render(args: argparse.Namespace, setup: dict, base: list[Run], cand: list[Run], v: Verdict) -> str:
     tok = Tokenizer.from_pretrained(args.model)
     gold = gsm8k.answers(Root / setup["prompts"])
     accuracy = lambda runs: np.mean([gsm8k.correct(r, gold, tok, setup["stop"]).mean() for r in runs])
@@ -99,10 +115,12 @@ def render(args: argparse.Namespace, setup: dict, base: list[Run], cand: list[Ru
     lines = [
         f"baseline {args.baseline[:12]} → candidate {args.candidate[:12]} · {args.model} · {hardware()} · {len(gold)} prompts",
         "",
-        f"Verdict: {verdict} (middle candidate run {v.score:.2f}× the noise; threshold {Threshold}×)",
+        f"Verdict: {verdict} (middle of {len(v.scores)} candidate runs {v.score:.2f}× the noise; threshold {Threshold}×)",
         f"Candidate runs: {', '.join(f'{s:.2f}×' for s in v.scores)} the baseline-vs-baseline KL of {v.noise:.2e}",
         f"GSM8K accuracy: baseline {accuracy(base):.3f}, candidate {accuracy(cand):.3f} (context, not part of the verdict)",
     ]
+    if len(v.scores) > CandidateRuns:
+        lines.insert(4, f"The first {CandidateRuns} runs read over the threshold, so {len(v.scores) - CandidateRuns} more ran and all {len(v.scores)} decide.")
     if v.changed:
         a, b = base[0], cand[0]
         lines += ["", "Most-changed prompts whose text differs (baseline run 1 vs candidate run 1, from the first differing token):"]
