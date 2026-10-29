@@ -1,6 +1,6 @@
 """Install vLLM at an exact commit into its own venv, from vLLM's per-commit wheels.
 
-Usage: python3 -m driftgate.build <tag | branch | sha | bench/entries/<id>.toml> ...
+Usage: python3 -m noisefloor.build <tag | branch | sha | bench/entries/<id>.toml> ...
 An entry file installs both of its builds.
 """
 
@@ -14,7 +14,7 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-BuildsDir = Path(os.environ.get("DRIFTGATE_BUILDS", Path.home() / ".cache" / "driftgate" / "builds"))
+BuildsDir = Path(os.environ.get("NOISEFLOOR_BUILDS", Path.home() / ".cache" / "noisefloor" / "builds"))
 WheelIndex = "https://wheels.vllm.ai/{sha}/vllm/"
 CommitApi = "https://api.github.com/repos/vllm-project/vllm/commits/{ref}"
 Python = "3.12"
@@ -27,7 +27,7 @@ def venv_path(sha: str) -> Path:
 def python_for(sha: str) -> Path:
     py = venv_path(sha) / "bin" / "python"
     if not (venv_path(sha) / ".done").exists():
-        sys.exit(f"build {sha[:12]} is not installed: run `python3 -m driftgate.build {sha}`")
+        sys.exit(f"build {sha[:12]} is not installed: run `python3 -m noisefloor.build {sha}`")
     return py
 
 

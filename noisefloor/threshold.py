@@ -1,7 +1,7 @@
-"""Where driftgate.diff's threshold comes from, and how often its rule is right.
+"""Where noisefloor.diff's threshold comes from, and how often its rule is right.
 
-Usage: python -m driftgate.threshold                     # simulate from data/kl
-       python -m driftgate.threshold cache NAME RUNS_DIR    # add a source to data/kl
+Usage: python -m noisefloor.threshold                     # simulate from data/kl
+       python -m noisefloor.threshold cache NAME RUNS_DIR    # add a source to data/kl
 
 A source is one GPU's runs of one setup: "fixed" runs of the trusted build and "buggy" runs of
 the other one. data/kl keeps the per-prompt KL of every pair of a source's runs, so the rule
@@ -15,9 +15,9 @@ from pathlib import Path
 
 import numpy as np
 
-from driftgate.compare import compare, load
-from driftgate.diff import BaselineRuns, CandidateRuns, Threshold
-from driftgate.run import Root
+from noisefloor.compare import compare, load
+from noisefloor.diff import BaselineRuns, CandidateRuns, Threshold
+from noisefloor.run import Root
 
 Data = Root / "data" / "kl"
 Prompts = 250

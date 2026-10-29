@@ -1,8 +1,9 @@
 [project]
-name = "driftgate"
+name = "noisefloor"
 version = "0.0.1"
-description = "A benchmark of real inference-engine regressions, and a fair comparison of the checks that catch them"
+description = "Catch silent numeric regressions in vLLM before they ship"
 requires-python = ">=3.12"
+license = "MIT"
 dependencies = [
     "numpy>=2",
     "tokenizers>=0.23.3",

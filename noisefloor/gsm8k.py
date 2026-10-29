@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 from tokenizers import Tokenizer
 
-from driftgate.compare import Run
+from noisefloor.compare import Run
 
 
 def answers(prompts: Path) -> list[int]:

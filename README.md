@@ -1,10 +1,10 @@
-# driftgate
+# noisefloor
 
 Catch silent numeric regressions in vLLM before they ship.
 
 A change to vLLM can shift a model's outputs without failing a single test: a rounding step
 in the wrong place, a stale cache slot, a kernel that truncates instead of rounding. vLLM's
-GSM8K gate only fails on an 8-point accuracy drop, so it misses most of these. driftgate runs
+GSM8K gate only fails on an 8-point accuracy drop, so it misses most of these. noisefloor runs
 the old and new builds a few times each and asks one question: do the new build's outputs
 differ from the old one's more than the old one differs from itself?
 
@@ -12,7 +12,7 @@ differ from the old one's more than the old one differs from itself?
 
 ```sh
 uv sync
-uv run python -m driftgate.diff <baseline> <candidate> --model Qwen/Qwen3-0.6B
+uv run python -m noisefloor.diff <baseline> <candidate> --model Qwen/Qwen3-0.6B
 ```
 
 Each build is a vLLM tag, branch or commit: `v0.20.0`, `main`, `124fac10`. It installs both
@@ -61,14 +61,14 @@ of all six decides, so two stray launches can't flip it either.
 
 The 1.25× threshold was set on unchanged code only: reruns of one build, and pairs of
 commits that change no engine code, across 4 models on 2 GPUs. `python -m
-driftgate.threshold` replays the rule on those runs (kept in `data/kl`) and prints the rates
+noisefloor.threshold` replays the rule on those runs (kept in `data/kl`) and prints the rates
 and scores below.
 
 ## How well it works
 
 Seven real vLLM bugs, each replayed from its fix PR's buggy parent and fixed commit:
 
-| Fix | What broke | GPU | vLLM's gate | driftgate.diff |
+| Fix | What broke | GPU | vLLM's gate | noisefloor.diff |
 | --- | --- | --- | --- | --- |
 | [#45361](https://github.com/vllm-project/vllm/pull/45361) | INT8 KV cache writes truncate instead of rounding | A5000 | caught | caught, 86× |
 | [#36580](https://github.com/vllm-project/vllm/pull/36580) | CUDA-graph padding tokens overwrite real KV cache entries | A40 | missed | caught, 49× |
@@ -116,23 +116,23 @@ wheels and run on a shared, pinned workload. Same-build reruns measure noise; th
 buggy-vs-fixed difference is what a detector must find.
 
 ```sh
-python3 -m driftgate.build <buggy sha> <fixed sha>    # once per build
-uv run python -m driftgate.run bench/entries/vllm-42379.toml --runs 3
-uv run python -m driftgate.report bench/entries/vllm-42379.toml
+python3 -m noisefloor.build <buggy sha> <fixed sha>    # once per build
+uv run python -m noisefloor.run bench/entries/vllm-42379.toml --runs 3
+uv run python -m noisefloor.report bench/entries/vllm-42379.toml
 ```
 
 | Path | What |
 | --- | --- |
 | `bench/entries/` | One TOML per regression: the commit pair, model, serving flags, provenance |
 | `bench/workloads/` | Pinned workloads; `gsm8k-5shot` mirrors vLLM's own GSM8K gate, `diff` is what a check runs |
-| `driftgate/build.py` | Installs vLLM at an exact commit into its own venv |
-| `driftgate/capture.py` | Runs inside a build's venv; saves tokens and top-20 logprobs |
-| `driftgate/run.py` | Alternates buggy and fixed builds, one fresh engine per run |
-| `driftgate/compare.py` | Bucketed KL on shared greedy prefixes |
-| `driftgate/gsm8k.py` | GSM8K accuracy as vLLM scores it, and an exact paired McNemar test |
-| `driftgate/report.py` | Every detector on every run pair: false alarms and detections |
-| `driftgate/diff.py` | One command: does a candidate build change a model's outputs beyond noise? |
-| `driftgate/threshold.py` | Replays the diff rule on stored run pairs: its threshold, false alarms, detections |
+| `noisefloor/build.py` | Installs vLLM at an exact commit into its own venv |
+| `noisefloor/capture.py` | Runs inside a build's venv; saves tokens and top-20 logprobs |
+| `noisefloor/run.py` | Alternates buggy and fixed builds, one fresh engine per run |
+| `noisefloor/compare.py` | Bucketed KL on shared greedy prefixes |
+| `noisefloor/gsm8k.py` | GSM8K accuracy as vLLM scores it, and an exact paired McNemar test |
+| `noisefloor/report.py` | Every detector on every run pair: false alarms and detections |
+| `noisefloor/diff.py` | One command: does a candidate build change a model's outputs beyond noise? |
+| `noisefloor/threshold.py` | Replays the diff rule on stored run pairs: its threshold, false alarms, detections |
 | `data/kl/` | Per-prompt KL between every pair of runs, per GPU and entry |
 | `data/mining/` | Candidate fix PRs mined from vLLM, 2025–2026 |
 
