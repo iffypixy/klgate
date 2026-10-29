@@ -1,0 +1,7 @@
+# What `driftgate.diff` runs: the first 250 GSM8K questions of gsm8k-5shot-serve, served
+# with 32 in flight. Its threshold was set for this prompt count and its run counts.
+mode = "serve"
+concurrency = 32
+prompts = "bench/prompts/gsm8k-5shot-250.jsonl"
+max_tokens = 256
+stop = ["Question", "Assistant:", "<|separator|>"]
