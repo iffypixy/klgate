@@ -1,0 +1,20 @@
+id = "vllm-36580"
+kind = "commit-pair"
+summary = "Model Runner V2 leaves stale slot ids between the real and padded token counts, so CUDA-graph padding tokens overwrite real KV cache entries"
+fix_pr = "https://github.com/vllm-project/vllm/pull/36580"
+buggy = "156e33553ccdba940fec83a720290b30d2686ee8"
+fixed = "9efc3bdcd6749f6d0ba26b12aee27cc8829c6f93"
+how_found = "maintainer: \"cause of insidious correctness issues\""
+
+model = "Qwen/Qwen3-0.6B"
+workload = "gsm8k-5shot"
+
+# CUDA graphs stay on: padding to a captured size is what triggers the bug.
+[engine]
+gpu_memory_utilization = 0.55
+max_model_len = 2048
+max_num_seqs = 32
+
+# Model Runner V2 was opt-in at this commit.
+[env]
+VLLM_USE_V2_MODEL_RUNNER = "1"

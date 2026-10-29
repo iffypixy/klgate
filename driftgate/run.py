@@ -44,6 +44,9 @@ def main() -> None:
 def load_entry(path: Path, workload: str | None = None) -> dict:
     """An entry with its workload's fields merged in."""
     entry = tomllib.loads(path.read_text())
+    if entry["kind"] == "null-pair":
+        # Runs and reports call the calibrated build "fixed" and the one under test "buggy".
+        entry["fixed"], entry["buggy"] = entry["baseline"], entry["candidate"]
     entry["workload"] = workload or entry["workload"]
     spec = tomllib.loads((Root / "bench" / "workloads" / f"{entry['workload']}.toml").read_text())
     return spec | entry

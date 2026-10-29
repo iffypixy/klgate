@@ -1,0 +1,18 @@
+id = "vllm-31931"
+kind = "commit-pair"
+summary = "The Triton fused-MoE kernel multiplies by the router weight after casting to bf16, instead of in fp32 before it"
+fix_pr = "https://github.com/vllm-project/vllm/pull/31931"
+introduced_by = "https://github.com/vllm-project/vllm/pull/31676"
+buggy = "a79079feef63d7a8124782cf2eb1cd68cbde99ee"
+fixed = "c4041f37a4a4b70c8821c35df9c79298ee5fcb7b"
+how_found = "CI: a ROCm LoRA MoE test started failing; the kernel is shared, so CUDA rounds twice too"
+
+# A small MoE whose unquantized experts run on the Triton fused_moe kernel.
+model = "ibm-granite/granite-3.1-1b-a400m-base"
+workload = "gsm8k-5shot"
+
+[engine]
+enforce_eager = true
+gpu_memory_utilization = 0.55
+max_model_len = 2048
+max_num_seqs = 32

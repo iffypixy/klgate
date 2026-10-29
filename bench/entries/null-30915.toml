@@ -1,0 +1,19 @@
+id = "null-30915"
+kind = "null-pair"
+summary = "A commit next to #30915's fixed build that touches only an example connector the engine never loads: any flag is a false positive"
+change = "https://github.com/vllm-project/vllm/pull/30225"
+# Only vllm/distributed/ec_transfer/ec_connector/example_connector.py changes.
+baseline = "11a89cf95caaec8dec13fab1e8e3d64c9a852a08"
+candidate = "a85724bd6e51af58793da365da7b70b1b72d71b9"
+
+model = "unsloth/gemma-3-1b-it"
+workload = "gsm8k-5shot"
+
+# The same setup as vllm-30915.
+[engine]
+enforce_eager = true
+gpu_memory_utilization = 0.55
+max_model_len = 2048
+max_num_seqs = 32
+attention_backend = "FLEX_ATTENTION"
+num_gpu_blocks_override = 2048

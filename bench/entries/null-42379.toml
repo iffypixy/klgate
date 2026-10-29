@@ -1,0 +1,18 @@
+id = "null-42379"
+kind = "null-pair"
+summary = "A test-only commit next to #42379's buggy build: the engine code is identical, so any flag is a false positive"
+change = "https://github.com/vllm-project/vllm/pull/43571"
+# Only tests/models/quantization/test_gpt_oss.py changes. The two wheels are separate CI
+# builds, so this measures whether rebuilding alone moves the numbers.
+baseline = "c0056b19bf4930ae7830e753b048b3daca0fbfee"
+candidate = "e9499996df8968f473db1f6bc7ec31207022aea0"
+
+model = "Qwen/Qwen3-0.6B"
+workload = "gsm8k-5shot"
+
+# The same setup as vllm-42379.
+[engine]
+enforce_eager = true
+gpu_memory_utilization = 0.55
+max_model_len = 2048
+max_num_seqs = 32

@@ -1,0 +1,18 @@
+id = "vllm-32118"
+kind = "commit-pair"
+summary = "A new Mamba request that gets a 1-token chunk is treated as a decode and starts from another request's stale SSM state"
+fix_pr = "https://github.com/vllm-project/vllm/pull/32118"
+buggy = "8863c2b25c84573e968ba291a26648ad17778c43"
+fixed = "8fb2c135be35d4d07b3ef25e36c51733345a01eb"
+how_found = "user report: gibberish for the same prompts under memory pressure (Jamba)"
+
+# A small Mamba-2 hybrid. Finished requests free their state slots for new ones, and a
+# new request gets a 1-token chunk whenever the step's token budget has 1 left.
+model = "ibm-granite/granite-4.0-h-350m-base"
+workload = "gsm8k-5shot"
+
+[engine]
+enforce_eager = true
+gpu_memory_utilization = 0.55
+max_model_len = 2048
+max_num_seqs = 32

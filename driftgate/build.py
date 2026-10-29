@@ -60,7 +60,7 @@ def find_wheel(sha: str) -> str:
 def shas(arg: str) -> list[str]:
     if arg.endswith(".toml"):
         entry = tomllib.loads(Path(arg).read_text())
-        return [entry["buggy"], entry["fixed"]]
+        return [entry[k] for k in ("buggy", "fixed", "baseline", "candidate") if k in entry]
     return [arg]
 
 

@@ -22,9 +22,13 @@ from driftgate import gsm8k
 from driftgate.compare import compare, load
 from driftgate.run import Root, load_entry, runs_dir
 
-GateTolerance = 0.08  # vLLM's default GSM8K tolerance
+# vLLM's gate fails when accuracy < expected - 0.08. Its expected value is a stored
+# per-model number; here it is the fixed build's own accuracy in the pair, the tightest
+# reference the gate could have, so these gate results are its best case.
+GateTolerance = 0.08
 Alpha = 0.05
 KlQuantile = 0.95  # the spec's 5% false-alarm target on baseline reruns
+MinCalibration = 20  # pairs a 95th percentile needs; 8 fixed runs give 21 per buggy pair
 
 
 @dataclass(frozen=True)
@@ -57,7 +61,7 @@ def score(entry: dict) -> tuple[list[Pair], dict[str, float]]:
     if not any(n.startswith("buggy") for n in names) or not any(n.startswith("fixed") for n in names):
         sys.exit(f"no runs for both builds in {runs_dir(entry)}: run `python -m driftgate.run` first")
     runs = {n: load(runs_dir(entry) / f"{n}.npz") for n in names}
-    correct = {n: gsm8k.correct(r, gold, tok) for n, r in runs.items()}
+    correct = {n: gsm8k.correct(r, gold, tok, entry["stop"]) for n, r in runs.items()}
     pairs = []
     for a, b in itertools.combinations(names, 2):
         if a.startswith("buggy"):  # names list fixed first, so both are buggy
@@ -77,16 +81,22 @@ def score(entry: dict) -> tuple[list[Pair], dict[str, float]]:
 
 def detectors(same: list[Pair]) -> dict:
     return {
-        f"GSM8K gate ({GateTolerance:.0%} drop)": lambda p: abs(p.accuracy_drop) > GateTolerance,
+        f"GSM8K gate ({GateTolerance:.0%} drop)": lambda p: p.accuracy_drop > GateTolerance,
         f"Paired McNemar (p < {Alpha})": lambda p: p.mcnemar_p < Alpha,
-        f"Token KL above rerun {KlQuantile:.0%} quantile": lambda p: p.kl > kl_threshold(p, same),
+        f"Token KL above rerun {KlQuantile:.0%} quantile": lambda p: None if (t := kl_threshold(p, same)) is None else p.kl > t,
     }
 
 
-def kl_threshold(p: Pair, same: list[Pair]) -> float:
-    """The KL quantile over fixed-build pairs disjoint from p; never flags without any."""
+def kl_threshold(p: Pair, same: list[Pair]) -> float | None:
+    """The KL quantile over fixed-build pairs disjoint from p, or None with too few to set it."""
     rest = [q.kl for q in same if not {q.a, q.b} & {p.a, p.b}]
-    return float(np.quantile(rest, KlQuantile)) if rest else float("inf")
+    return float(np.quantile(rest, KlQuantile)) if len(rest) >= MinCalibration else None
+
+
+def flagged(flag, pairs: list[Pair]) -> str:
+    """How many pairs a detector flags, or a dash when it cannot judge them yet."""
+    verdicts = [flag(p) for p in pairs]
+    return "—" if None in verdicts else f"{sum(verdicts)}/{len(verdicts)}"
 
 
 def summary(entries: list[dict], workload: str) -> str:
@@ -95,7 +105,7 @@ def summary(entries: list[dict], workload: str) -> str:
     lines = [
         f"## All entries · {workload}",
         "",
-        "Each cell: buggy-vs-fixed pairs flagged (fixed-build reruns flagged).",
+        f"Each cell: buggy-vs-fixed pairs flagged (fixed-build reruns flagged). KL shows a dash until an entry has the {MinCalibration} rerun pairs its threshold needs. A null pair changes no engine code, so it runs its baseline as \"fixed\" and its candidate as \"buggy\", and any flag on it is a false positive.",
         "",
         "| Entry | GSM8K accuracy, fixed → buggy | Mean KL, reruns → buggy vs fixed | " + " | ".join(names) + " |",
         "| --- | --- | --- | " + " | ".join("---" for _ in names) + " |",
@@ -104,8 +114,9 @@ def summary(entries: list[dict], workload: str) -> str:
         pairs, accuracy = score(entry)
         same = [p for p in pairs if p.same_build]
         cross = [p for p in pairs if not p.same_build]
-        cells = [f"{sum(map(f, cross))}/{len(cross)} ({sum(map(f, same))}/{len(same)})" for f in detectors(same).values()]
-        kl = f"{np.mean([p.kl for p in same]):.1e} → {np.mean([p.kl for p in cross]):.1e}"
+        cells = [f"{flagged(f, cross)} ({flagged(f, same)})" for f in detectors(same).values()]
+        mean = lambda ps: f"{np.mean([p.kl for p in ps]):.1e}" if ps else "—"
+        kl = f"{mean(same)} → {mean(cross)}"
         lines.append(f"| {entry['id']} | {accuracy['fixed']:.3f} → {accuracy['buggy']:.3f} | {kl} | " + " | ".join(cells) + " |")
     return "\n".join(lines)
 
@@ -114,28 +125,32 @@ def render(entry: dict, pairs: list[Pair], accuracy: dict[str, float]) -> str:
     same = [p for p in pairs if p.same_build]
     cross = [p for p in pairs if not p.same_build]
     rows = [
-        f"| {name} | {sum(map(flag, same))}/{len(same)} | {sum(map(flag, cross))}/{len(cross)} |"
+        f"| {name} | {flagged(flag, same)} | {flagged(flag, cross)} |"
         for name, flag in detectors(same).items()
     ]
-    gap = lambda ps: f"{min(abs(p.accuracy_drop) for p in ps):.3f}–{max(abs(p.accuracy_drop) for p in ps):.3f}"
-    span = lambda ps, f: f"{min(map(f, ps)):.2e}–{max(map(f, ps)):.2e}"
+    gap = lambda ps: f"{min(abs(p.accuracy_drop) for p in ps):.3f}–{max(abs(p.accuracy_drop) for p in ps):.3f}" if ps else "—"
+    span = lambda ps, f: f"{min(map(f, ps)):.2e}–{max(map(f, ps)):.2e}" if ps else "—"
+    smallest = lambda ps: f"{min(p.mcnemar_p for p in ps):.3f}" if ps else "—"
+    null = entry["kind"] == "null-pair"
+    base, test = ("baseline", "candidate") if null else ("fixed", "buggy")
+    reruns, versus = f"{base.capitalize()} reruns", f"{test.capitalize()}-vs-{base} pairs"
     return "\n".join([
         f"## {entry['id']} · {entry['workload']}",
         "",
         entry["summary"],
         "",
-        f"GSM8K accuracy: fixed {accuracy['fixed']:.3f}, buggy {accuracy['buggy']:.3f}.",
+        f"GSM8K accuracy: {base} {accuracy['fixed']:.3f}, {test} {accuracy['buggy']:.3f}.",
         "",
-        "| Detector | Fixed-build reruns flagged | Buggy-vs-fixed pairs flagged |",
+        f"| Detector | {reruns} flagged | {versus} flagged{' (false positives)' if null else ''} |",
         "| --- | --- | --- |",
         *rows,
         "",
-        "| Measure | Fixed-build reruns | Buggy-vs-fixed pairs |",
+        f"| Measure | {reruns} | {versus} |",
         "| --- | --- | --- |",
         f"| Mean token KL | {span(same, lambda p: p.kl)} | {span(cross, lambda p: p.kl)} |",
         f"| Prompts whose output differs | {span(same, lambda p: p.diverged)} | {span(cross, lambda p: p.diverged)} |",
         f"| GSM8K accuracy gap | {gap(same)} | {gap(cross)} |",
-        f"| Smallest McNemar p | {min(p.mcnemar_p for p in same):.3f} | {min(p.mcnemar_p for p in cross):.3f} |",
+        f"| Smallest McNemar p | {smallest(same)} | {smallest(cross)} |",
     ])
 
 
