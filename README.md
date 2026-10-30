@@ -73,7 +73,7 @@ Seven real vLLM bugs, each replayed from its fix PR's buggy parent and fixed com
 | [#45361](https://github.com/vllm-project/vllm/pull/45361) | INT8 KV cache writes truncate instead of rounding | A5000 | caught | caught, 86× |
 | [#36580](https://github.com/vllm-project/vllm/pull/36580) | CUDA-graph padding tokens overwrite real KV cache entries | A40 | missed | caught, 49× |
 | [#30915](https://github.com/vllm-project/vllm/pull/30915) | FlexAttention maps reused blocks to the wrong logical block | A5000 | missed | caught, 9.5× |
-| [#42379](https://github.com/vllm-project/vllm/pull/42379) | RMSNorm upcasts the weight before multiplying | A5000; A40 eager | missed | caught, 1.57× and 1.45× |
+| [#42379](https://github.com/vllm-project/vllm/pull/42379) | RMSNorm upcasts the weight before multiplying; [#46070](https://github.com/vllm-project/vllm/pull/46070) reverted the fix on main | A5000; A40 eager | missed | caught, 1.57× and 1.45× |
 | [#31931](https://github.com/vllm-project/vllm/pull/31931) | Fused MoE applies the router weight after casting to bf16 | A40 | missed | 9 checks in 10, 1.35× |
 | [#32118](https://github.com/vllm-project/vllm/pull/32118) | A 1-token Mamba prefill starts from another request's state | A40 | missed | missed, 0.98× |
 | [#53877](https://github.com/vllm-project/vllm/pull/53877) | DeltaNet decode rounds beta to bf16 early | A5000 | missed | missed, 1.03× |
