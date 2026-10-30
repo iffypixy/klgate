@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from noisefloor.compare import Run
-from noisefloor.diff import judge
+from klgate.compare import Run
+from klgate.diff import judge
 
 Prompts, Vocab = 200, 20
 rng = np.random.default_rng(0)

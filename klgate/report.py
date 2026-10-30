@@ -6,8 +6,8 @@ that share no run with it, so no pair is judged by a threshold fitted on its own
 out: a CI gate only ever has reruns of its known-good baseline to calibrate on, and some
 bugs make the buggy build disagree with itself.
 
-Usage: python -m noisefloor.report bench/entries/<id>.toml [workload]
-       python -m noisefloor.report all [workload]    # one row per entry with runs
+Usage: python -m klgate.report bench/entries/<id>.toml [workload]
+       python -m klgate.report all [workload]    # one row per entry with runs
 """
 
 import itertools
@@ -18,9 +18,9 @@ from pathlib import Path
 import numpy as np
 from tokenizers import Tokenizer
 
-from noisefloor import gsm8k
-from noisefloor.compare import compare, load
-from noisefloor.run import Root, load_entry, runs_dir
+from klgate import gsm8k
+from klgate.compare import compare, load
+from klgate.run import Root, load_entry, runs_dir
 
 # vLLM's gate fails when accuracy < expected - 0.08. Its expected value is a stored
 # per-model number; here it is the fixed build's own accuracy in the pair, the tightest
@@ -59,7 +59,7 @@ def score(entry: dict) -> tuple[list[Pair], dict[str, float]]:
     tok = Tokenizer.from_pretrained(entry["model"])
     names = [f"{side}/{p.stem}" for side in ("fixed", "buggy") for p in sorted((runs_dir(entry) / side).glob("*.npz"))]
     if not any(n.startswith("buggy") for n in names) or not any(n.startswith("fixed") for n in names):
-        sys.exit(f"no runs for both builds in {runs_dir(entry)}: run `python -m noisefloor.run` first")
+        sys.exit(f"no runs for both builds in {runs_dir(entry)}: run `python -m klgate.run` first")
     runs = {n: load(runs_dir(entry) / f"{n}.npz") for n in names}
     correct = {n: gsm8k.correct(r, gold, tok, entry["stop"]) for n, r in runs.items()}
     pairs = []

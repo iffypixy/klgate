@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 from tokenizers import Tokenizer
 
-from noisefloor.compare import Run
+from klgate.compare import Run
 
 
 def answers(prompts: Path) -> list[int]:

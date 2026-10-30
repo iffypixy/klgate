@@ -1,10 +1,10 @@
-# noisefloor
+# klgate
 
 Catch silent numeric regressions in vLLM before they ship.
 
 A change to vLLM can shift a model's outputs without failing a single test: a rounding step
 in the wrong place, a stale cache slot, a kernel that truncates instead of rounding. vLLM's
-GSM8K gate only fails on an 8-point accuracy drop, so it misses most of these. noisefloor runs
+GSM8K gate only fails on an 8-point accuracy drop, so it misses most of these. klgate runs
 the old and new builds a few times each and asks one question: do the new build's outputs
 differ from the old one's more than the old one differs from itself?
 
@@ -12,7 +12,7 @@ differ from the old one's more than the old one differs from itself?
 
 ```sh
 uv sync
-uv run python -m noisefloor.diff <baseline> <candidate> --model Qwen/Qwen3-0.6B
+uv run python -m klgate.diff <baseline> <candidate> --model Qwen/Qwen3-0.6B
 ```
 
 Each build is a vLLM tag, branch or commit: `v0.20.0`, `main`, `124fac10`. It installs both
@@ -61,14 +61,14 @@ of all six decides, so two stray launches can't flip it either.
 
 The 1.25× threshold was set on unchanged code only: reruns of one build, and pairs of
 commits that change no engine code, across 4 models on 2 GPUs. `python -m
-noisefloor.threshold` replays the rule on those runs (kept in `data/kl`) and prints the rates
+klgate.threshold` replays the rule on those runs (kept in `data/kl`) and prints the rates
 and scores below.
 
 ## How well it works
 
 Seven real vLLM bugs, each replayed from its fix PR's buggy parent and fixed commit:
 
-| Fix | What broke | GPU | vLLM's gate | noisefloor.diff |
+| Fix | What broke | GPU | vLLM's gate | klgate.diff |
 | --- | --- | --- | --- | --- |
 | [#45361](https://github.com/vllm-project/vllm/pull/45361) | INT8 KV cache writes truncate instead of rounding | A5000 | caught | caught, 86× |
 | [#36580](https://github.com/vllm-project/vllm/pull/36580) | CUDA-graph padding tokens overwrite real KV cache entries | A40 | missed | caught, 49× |
@@ -111,7 +111,7 @@ pair reads 1.41×, changed.
 
 ## The KL check
 
-`noisefloor.kl` is more sensitive and needs one engine launch per run. Each run sends two
+`klgate.kl` is more sensitive and needs one engine launch per run. Each run sends two
 kinds of requests:
 
 - **Probes**: 32 fixed 1,024-token chunks of WikiText-2, scored with prompt logprobs as
@@ -122,11 +122,11 @@ kinds of requests:
   as they do when serving. Probes can't reach these: prompt logprobs skip the prefix cache.
 
 ```sh
-python3 -m noisefloor.build <sha>    # once per build
-PYTHONPATH=. ~/.cache/noisefloor/builds/<sha>/bin/python -m noisefloor.kl score \
+python3 -m klgate.build <sha>    # once per build
+PYTHONPATH=. ~/.cache/klgate/builds/<sha>/bin/python -m klgate.kl score \
   --model Qwen/Qwen3-0.6B --text wiki.test.raw --prompts bench/prompts/gsm8k-5shot-250.jsonl \
   --seed 0 --out runs/<sha>-0.npz
-uv run python -m noisefloor.kl compare --reference runs/<good>-{0,1,2}.npz --candidate runs/<new>-{0,1,2}.npz
+uv run python -m klgate.kl compare --reference runs/<good>-{0,1,2}.npz --candidate runs/<new>-{0,1,2}.npz
 ```
 
 Score each build 3 times with seeds 0 to 2; the seed reorders requests, so batches differ. A
@@ -146,7 +146,7 @@ run takes about a minute on an A40. `wiki.test.raw` is llama.cpp's copy, from
 The same seven bugs and two pairs of identical engine code, 6 runs a build on an A40 with
 each entry's settings, scored 3 against 3 with the fixed build as the reference:
 
-| Fix | Probes | Traffic | Verdict | `noisefloor.diff` above |
+| Fix | Probes | Traffic | Verdict | `klgate.diff` above |
 | --- | --- | --- | --- | --- |
 | #45361 | 3,023× | 50× | changed | 86× |
 | #42379, eager | 13.4× | 1.2× | changed | 1.45× |
@@ -173,24 +173,24 @@ wheels and run on a shared, pinned workload. Same-build reruns measure noise; th
 buggy-vs-fixed difference is what a detector must find.
 
 ```sh
-python3 -m noisefloor.build <buggy sha> <fixed sha>    # once per build
-uv run python -m noisefloor.run bench/entries/vllm-42379.toml --runs 3
-uv run python -m noisefloor.report bench/entries/vllm-42379.toml
+python3 -m klgate.build <buggy sha> <fixed sha>    # once per build
+uv run python -m klgate.run bench/entries/vllm-42379.toml --runs 3
+uv run python -m klgate.report bench/entries/vllm-42379.toml
 ```
 
 | Path | What |
 | --- | --- |
 | `bench/entries/` | One TOML per regression: the commit pair, model, serving flags, provenance |
 | `bench/workloads/` | Pinned workloads; `gsm8k-5shot` mirrors vLLM's own GSM8K gate, `diff` is what a check runs |
-| `noisefloor/build.py` | Installs vLLM at an exact commit into its own venv |
-| `noisefloor/capture.py` | Runs inside a build's venv; saves tokens and top-20 logprobs |
-| `noisefloor/run.py` | Alternates buggy and fixed builds, one fresh engine per run |
-| `noisefloor/compare.py` | Bucketed KL on shared greedy prefixes |
-| `noisefloor/gsm8k.py` | GSM8K accuracy as vLLM scores it, and an exact paired McNemar test |
-| `noisefloor/report.py` | Every detector on every run pair: false alarms and detections |
-| `noisefloor/diff.py` | One command: does a candidate build change a model's outputs beyond noise? |
-| `noisefloor/threshold.py` | Replays the diff rule on stored run pairs: its threshold, false alarms, detections |
-| `noisefloor/kl.py` | The KL check: probes and traffic in one launch, scored against rerun noise |
+| `klgate/build.py` | Installs vLLM at an exact commit into its own venv |
+| `klgate/capture.py` | Runs inside a build's venv; saves tokens and top-20 logprobs |
+| `klgate/run.py` | Alternates buggy and fixed builds, one fresh engine per run |
+| `klgate/compare.py` | Bucketed KL on shared greedy prefixes |
+| `klgate/gsm8k.py` | GSM8K accuracy as vLLM scores it, and an exact paired McNemar test |
+| `klgate/report.py` | Every detector on every run pair: false alarms and detections |
+| `klgate/diff.py` | One command: does a candidate build change a model's outputs beyond noise? |
+| `klgate/threshold.py` | Replays the diff rule on stored run pairs: its threshold, false alarms, detections |
+| `klgate/kl.py` | The KL check: probes and traffic in one launch, scored against rerun noise |
 | `data/kl/` | Per-prompt KL between every pair of runs, per GPU and entry |
 | `data/mining/` | Candidate fix PRs mined from vLLM, 2025–2026 |
 

@@ -1,6 +1,6 @@
 """Run a benchmark entry: alternate the buggy and fixed builds, one fresh engine per run.
 
-Usage: python -m noisefloor.run bench/entries/<id>.toml [--runs N] [--workload NAME] [--side fixed|buggy]
+Usage: python -m klgate.run bench/entries/<id>.toml [--runs N] [--workload NAME] [--side fixed|buggy]
 Runs land in runs/<gpu>/<entry>/<workload>/<fixed|buggy>/<i>.npz.
 """
 
@@ -13,10 +13,10 @@ import sys
 import tomllib
 from pathlib import Path
 
-from noisefloor import build
+from klgate import build
 
 Root = Path(__file__).resolve().parent.parent
-Capture = Root / "noisefloor" / "capture.py"
+Capture = Root / "klgate" / "capture.py"
 
 
 def main() -> None:
@@ -59,9 +59,9 @@ def runs_dir(entry: dict) -> Path:
 def hardware() -> str:
     """The GPU these runs come from, so runs from different machines never mix.
 
-    NOISEFLOOR_HW overrides it, to report on runs copied from another machine.
+    KLGATE_HW overrides it, to report on runs copied from another machine.
     """
-    if hw := os.environ.get("NOISEFLOOR_HW"):
+    if hw := os.environ.get("KLGATE_HW"):
         return hw
     name = subprocess.run(
         ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader", "-i", "0"],

@@ -21,8 +21,8 @@ first reference against the first candidate, and a verdict per part:
   makes them do.
 
 Usage:
-  python -m noisefloor.kl score --model NAME --text wiki.test.raw --prompts gsm8k.jsonl --out run.npz [--seed N]
-  python -m noisefloor.kl compare --reference r0.npz r1.npz ... --candidate c0.npz ...
+  python -m klgate.kl score --model NAME --text wiki.test.raw --prompts gsm8k.jsonl --out run.npz [--seed N]
+  python -m klgate.kl compare --reference r0.npz r1.npz ... --candidate c0.npz ...
 """
 
 import argparse
@@ -32,7 +32,7 @@ from pathlib import Path
 
 import numpy as np
 
-from noisefloor.compare import Run, bucketed_kl, compare as compare_runs
+from klgate.compare import Run, bucketed_kl, compare as compare_runs
 
 TopK = 20
 Context = 1024  # tokens per probe chunk; the second half is scored, as in llama.cpp
@@ -140,7 +140,7 @@ def compare(refs: list[dict], cands: list[dict]) -> dict:
         raise SystemExit("at least 2 runs of each build are needed to measure rerun noise")
     for run in refs + cands:
         if not np.array_equal(run["tokens"], refs[0]["tokens"]):
-            raise SystemExit("runs scored different probe tokens; use the same model, text and noisefloor version")
+            raise SystemExit("runs scored different probe tokens; use the same model, text and klgate version")
     scores = {"probes": pooled(refs, cands, probe_kl), "traffic": against_reference(refs, cands, traffic_kl)}
     return {"stats": stats(refs[0], cands[0]), "scores": scores, "thresholds": Thresholds,
             "changed": any(scores[k] > Thresholds[k] for k in scores)}

@@ -1,5 +1,5 @@
 [project]
-name = "noisefloor"
+name = "klgate"
 version = "0.0.1"
 description = "Catch silent numeric regressions in vLLM before they ship"
 requires-python = ">=3.12"

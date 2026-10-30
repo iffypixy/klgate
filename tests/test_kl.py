@@ -1,7 +1,7 @@
 import numpy as np
 
-from noisefloor.compare import bucketed_kl
-from noisefloor.kl import compare
+from klgate.compare import bucketed_kl
+from klgate.kl import compare
 
 Rng = np.random.default_rng(0)
 

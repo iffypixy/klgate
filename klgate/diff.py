@@ -1,6 +1,6 @@
 """Does a candidate vLLM build change a model's outputs beyond rerun noise?
 
-Usage: python -m noisefloor.diff <baseline> <candidate> --model NAME [--engine JSON] [--env KEY=VALUE ...]
+Usage: python -m klgate.diff <baseline> <candidate> --model NAME [--engine JSON] [--env KEY=VALUE ...]
 
 Each build is a vLLM tag, branch or commit: v0.20.0, main, 124fac10.
 
@@ -26,15 +26,15 @@ from pathlib import Path
 import numpy as np
 from tokenizers import Tokenizer
 
-from noisefloor import build, gsm8k
-from noisefloor.compare import Run, compare, load
-from noisefloor.run import Root, capture, hardware
+from klgate import build, gsm8k
+from klgate.compare import Run, compare, load
+from klgate.run import Root, capture, hardware
 
 BaselineRuns = 5
 CandidateRuns = 3  # per round; a first-round "changed" adds a second round
 # Set on unchanged code (reruns of one build, and commit pairs that change no engine code)
 # across 4 models on 2 GPUs: with the confirmation round, at most 1.5% of checks on any of
-# them say "changed". `python -m noisefloor.threshold` replays it.
+# them say "changed". `python -m klgate.threshold` replays it.
 Threshold = 1.25
 Shown = 5  # most-changed prompts to print
 

@@ -6,13 +6,13 @@
 # Usage: setsid nohup pod/queue.sh jobs.txt > /workspace/queue.log 2>&1 < /dev/null &
 export UV_CACHE_DIR=/workspace/.uv-cache
 export HF_HOME=/workspace/hf
-export NOISEFLOOR_BUILDS=/workspace/builds
+export KLGATE_BUILDS=/workspace/builds
 export UV_PYTHON_INSTALL_DIR=/workspace/.uv-python
 # setup.sh downloads the models up front; offline keeps runs off the hub mid-run.
 export HF_HUB_OFFLINE=1
 export PATH="$HOME/.local/bin:$PATH"
 jobs=$(realpath "$1")
-cd /workspace/noisefloor
+cd /workspace/klgate
 mkdir -p logs
 
 n=1
@@ -28,7 +28,7 @@ while [ "$idle" -lt 20 ]; do
     set -- $line
     side=${4:+--side $4}
     echo "$(date -u +%H:%M) start $line"
-    uv run python -m noisefloor.run "bench/entries/$1.toml" --workload "$2" --runs "$3" $side >> "logs/$1-$2.log" 2>&1
+    uv run python -m klgate.run "bench/entries/$1.toml" --workload "$2" --runs "$3" $side >> "logs/$1-$2.log" 2>&1
     status=$?
     echo "$(date -u +%H:%M) exit $status $line"
     n=$((n + 1))
