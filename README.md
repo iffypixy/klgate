@@ -109,6 +109,63 @@ pair reads 1.41×, changed.
   NVIDIA GPU. It was tested on an A40 and an RTX A5000, with models of 0.6–1.3B parameters.
 - Gated models need a Hugging Face token for the tokenizer.
 
+## The KL check
+
+`noisefloor.kl` is more sensitive and needs one engine launch per run. Each run sends two
+kinds of requests:
+
+- **Probes**: 32 fixed 1,024-token chunks of WikiText-2, scored with prompt logprobs as
+  llama.cpp's `--kl-divergence` does. Both builds score identical tokens, so a kernel that
+  rounds differently stands out even when no answer changes.
+- **Traffic**: the 250 GSM8K questions of `diff`, generated greedily. They share a few-shot
+  prefix and outnumber the batch, so prefix caching, chunked prefill and KV block reuse run
+  as they do when serving. Probes can't reach these: prompt logprobs skip the prefix cache.
+
+```sh
+python3 -m noisefloor.build <sha>    # once per build
+PYTHONPATH=. ~/.cache/noisefloor/builds/<sha>/bin/python -m noisefloor.kl score \
+  --model Qwen/Qwen3-0.6B --text wiki.test.raw --prompts bench/prompts/gsm8k-5shot-250.jsonl \
+  --seed 0 --out runs/<sha>-0.npz
+uv run python -m noisefloor.kl compare --reference runs/<good>-{0,1,2}.npz --candidate runs/<new>-{0,1,2}.npz
+```
+
+Score each build 3 times with seeds 0 to 2; the seed reorders requests, so batches differ. A
+run takes about a minute on an A40. `wiki.test.raw` is llama.cpp's copy, from
+`wikitext-2-raw-v1.zip` in [ggml-org/ci](https://huggingface.co/datasets/ggml-org/ci).
+
+### How it decides
+
+- Probes: the mean KL across builds over the mean KL between reruns of either build, above
+  2×. Probe reruns are often bit-identical, so the noise is pooled from both sides.
+- Traffic: the mean KL across builds over the mean KL between the reference's own reruns,
+  above 3×. Measuring against the reference alone also flags a candidate whose runs disagree
+  with each other, which is how random KV corruption shows.
+
+### How well it works
+
+The same seven bugs and two pairs of identical engine code, 6 runs a build on an A40 with
+each entry's settings, scored 3 against 3 with the fixed build as the reference:
+
+| Fix | Probes | Traffic | Verdict | `noisefloor.diff` above |
+| --- | --- | --- | --- | --- |
+| #45361 | 3,023× | 50× | changed | 86× |
+| #42379, eager | 13.4× | 1.2× | changed | 1.45× |
+| #31931 | 2.8× | 1.4× | changed | 1.35×, 9 checks in 10 |
+| #30915 | 0.9× | 7.7× | changed | 9.5× |
+| #36580 | 1.0× | 3.3×, 4.6× with 6 a side | changed | 49× |
+| #32118 | 1.0× | 0.8× | same | missed |
+| #53877 | 0.8× | 1.0× | same | missed |
+| Identical engine code, twice | 0.8×, 1.0× | 0.9×, 0.8× | same | same |
+
+Over 360 same-build 3-against-3 splits neither score crossed its threshold: probes peaked at
+1.18×, traffic at 2.26×.
+
+- The thresholds were chosen on these same bugs; an unseen bug may score lower.
+- #36580 corrupts each run differently, from 1.5× to 21× of the noise in single runs, so 3
+  runs a side catch it with a thin margin. Run more when it matters.
+- Model Runner V2 at #36580's commits sometimes returns truncated prompt logprobs; `score`
+  then stops with an error, and a rerun usually works.
+
 ## The benchmark
 
 Each entry is a vLLM fix PR's buggy parent and fixed commit, installed from vLLM's per-commit
@@ -133,6 +190,7 @@ uv run python -m noisefloor.report bench/entries/vllm-42379.toml
 | `noisefloor/report.py` | Every detector on every run pair: false alarms and detections |
 | `noisefloor/diff.py` | One command: does a candidate build change a model's outputs beyond noise? |
 | `noisefloor/threshold.py` | Replays the diff rule on stored run pairs: its threshold, false alarms, detections |
+| `noisefloor/kl.py` | The KL check: probes and traffic in one launch, scored against rerun noise |
 | `data/kl/` | Per-prompt KL between every pair of runs, per GPU and entry |
 | `data/mining/` | Candidate fix PRs mined from vLLM, 2025–2026 |
 
