@@ -7,7 +7,6 @@ baseline = "11a89cf95caaec8dec13fab1e8e3d64c9a852a08"
 candidate = "a85724bd6e51af58793da365da7b70b1b72d71b9"
 
 model = "unsloth/gemma-3-1b-it"
-workload = "gsm8k-5shot"
 
 # The same setup as vllm-30915.
 [engine]

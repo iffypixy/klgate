@@ -1,7 +1,7 @@
 [project]
 name = "klgate"
 version = "0.0.1"
-description = "Catch silent numeric regressions in vLLM before they ship"
+description = "Catch silent numeric changes between two vLLM builds"
 requires-python = ">=3.12"
 license = "MIT"
 dependencies = [

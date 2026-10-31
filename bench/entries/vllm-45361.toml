@@ -7,7 +7,6 @@ fixed = "9c450b102788bb271c1710354db22290ed57f543"
 how_found = "code reading; fix PR reports relative score loss vs bf16 falling from ~5% to ~0.5%"
 
 model = "Qwen/Qwen3-0.6B"
-workload = "gsm8k-5shot"
 
 [engine]
 enforce_eager = true

@@ -9,7 +9,6 @@ how_found = "CI: a ROCm LoRA MoE test started failing; the kernel is shared, so 
 
 # A small MoE whose unquantized experts run on the Triton fused_moe kernel.
 model = "ibm-granite/granite-3.1-1b-a400m-base"
-workload = "gsm8k-5shot"
 
 [engine]
 enforce_eager = true

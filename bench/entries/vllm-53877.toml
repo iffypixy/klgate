@@ -7,7 +7,6 @@ fixed = "56058fd572f6a7fec6899385f4a4ed7f4b964477"
 how_found = "code reading; fix PR reports kernel 0.62109 vs FP32 reference 0.62246 on a regression input"
 
 model = "Qwen/Qwen3.5-0.8B"
-workload = "gsm8k-5shot"
 
 # Text only: no image or video inputs, so the vision encoder is not profiled.
 [engine]

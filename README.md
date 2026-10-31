@@ -1,198 +1,113 @@
 # klgate
 
-Catch silent numeric regressions in vLLM before they ship.
+Catch silent numeric changes between two vLLM builds.
 
-A change to vLLM can shift a model's outputs without failing a single test: a rounding step
-in the wrong place, a stale cache slot, a kernel that truncates instead of rounding. vLLM's
-GSM8K gate only fails on an 8-point accuracy drop, so it misses most of these. klgate runs
-the old and new builds a few times each and asks one question: do the new build's outputs
-differ from the old one's more than the old one differs from itself?
+A kernel or cache change can shift a model's outputs without failing a single test: a
+rounding step in the wrong place, a stale cache slot, a kernel that truncates instead of
+rounding. vLLM's GSM8K gate fails only on an 8-point accuracy drop, and it caught 1 of the 7
+bugs below. klgate scores both builds a few times and asks whether the candidate differs
+from the reference by more than reruns differ from each other.
 
 ## Check a build
 
+This checks the buggy parent of #42379 (the candidate) against the fix (the reference). The
+bug's kernel runs only in eager mode, hence `--engine`.
+
 ```sh
-uv sync
-uv run python -m klgate.diff <baseline> <candidate> --model Qwen/Qwen3-0.6B
+ref=$(uv run python -m klgate.build 124fac10)    # a tag, branch or commit; prints its python
+new=$(uv run python -m klgate.build e9499996)
+for seed in 0 1 2; do
+  PYTHONPATH=. $ref -m klgate.kl score --model Qwen/Qwen3-0.6B --engine '{"enforce_eager": true}' \
+    --prompts bench/gsm8k-5shot-250.jsonl --seed $seed --out runs/ref/$seed.npz
+done
+for seed in 3 4 5; do
+  PYTHONPATH=. $new -m klgate.kl score --model Qwen/Qwen3-0.6B --engine '{"enforce_eager": true}' \
+    --prompts bench/gsm8k-5shot-250.jsonl --seed $seed --out runs/new/$seed.npz
+done
+uv run python -m klgate.kl compare --reference runs/ref/{0,1,2}.npz --candidate runs/new/{3,4,5}.npz
 ```
 
-Each build is a vLLM tag, branch or commit: `v0.20.0`, `main`, `124fac10`. It installs both
-from vLLM's prebuilt wheels (about 9 GB each), runs 5 baseline and 3 candidate engines on 250
-GSM8K questions served 32 at a time, and prints a verdict. Here it is with the fix for #36580
-as the baseline and the commit before it as the candidate, with `--env
-VLLM_USE_V2_MODEL_RUNNER=1` since that bug lives in Model Runner V2:
+On an A40 this prints:
 
 ```
-baseline 9efc3bdcd674 → candidate 156e33553ccd · Qwen/Qwen3-0.6B · a40 · 250 prompts
+Probes, first reference vs first candidate, 16384 positions:
+  Mean KLD : 0.001125 ± 0.000013
+  Median   : 0.000810   99%: 0.006218   Max: 0.094194
+  RMS Δp   : 0.983 %
+  Same top : 97.998 ± 0.109 %
+Traffic: 45.6 % of outputs differ
 
-Verdict: CHANGED (middle of 6 candidate runs 61.83× the noise; threshold 1.25×)
-Candidate runs: 66.91×, 56.76×, 78.52×, 66.99×, 48.49×, 50.62× the baseline-vs-baseline KL of 4.60e-04
-The first 3 runs read over the threshold, so 3 more ran and all 6 decide.
-GSM8K accuracy: baseline 0.418, candidate 0.387 (context, not part of the verdict)
-
-Most-changed prompts whose text differs (baseline run 1 vs candidate run 1, from the first differing token):
-  #223, token 17:
-    baseline   " that geraniums. So he plants 90 - 40 = <<90-40=50>>50 petunias.\nSo total flower"
-    candidate  " than geraniums. So he plants 90 - 40 = <<90-40=50>>50 petunias.\nSo total flower"
-  #141, token 8:
-    baseline   " - 4 = <<20-12-4=4>>4 cars are semi-automatic.\nSo the percentage is 4/20 = <<4/2"
-    candidate  " + 4 = <<12+4=16>>16 semi-automatic cars.\nSo the percentage is 16/20 = <<16/20=8"
-  ...
+Verdict: CHANGED (probes 9.36× the rerun noise, threshold 2.0×; traffic 1.17×, threshold 3.0×)
 ```
 
-A check takes about 25 minutes on an A40, 8 more when it confirms, so roughly $0.25–0.35 on
-a rented one, plus the first install of each build. Pass the engine settings you deploy with
-(`--engine '{"max_model_len": 2048}'`) and any environment (`--env VLLM_USE_V2_MODEL_RUNNER=1`):
-a check only covers the code paths those settings run.
+Builds install from vLLM's per-commit wheels into `~/.cache/klgate/builds`, about 9 GB
+each; `KLGATE_BUILDS` moves them. A run takes about a minute on an A40 with the models
+below. The seed reorders requests so batches differ, and every run needs its own. Run both
+builds on the same GPU type with the engine settings and environment you serve with, such
+as `--engine '{"max_model_len": 2048}' --env VLLM_USE_V2_MODEL_RUNNER=1`; `compare`
+refuses runs whose settings differ.
 
-It works best on one commit or a short range. A release brings hundreds of commits, and some
-intended numerics change among them is likely; then the shown prompts and accuracy are what
-tell you whether it matters.
+## What it measures
 
-### How it decides
+Each run sends two kinds of requests to one engine:
 
-Even the same build rarely reproduces its own outputs exactly when serving, because batch
-composition changes with request timing. So every candidate run gets a score: its KL to the
-baseline runs over the baselines' KL to each other. Unchanged code scores about 1×.
+- **Probes**: 32 chunks of 1,024 WikiText-2 tokens, scored with prompt logprobs on their
+  last 512 positions. Both builds see identical tokens, so a kernel that rounds
+  differently stands out even when no answer changes. The chunks get no BOS token, and KL
+  is taken over the top 20 tokens plus one bucket for the rest, a lower bound on the true KL.
+- **Traffic**: 250 GSM8K questions behind a shared 5-shot prefix, generated greedily, 32
+  sequences at a time. This runs prefix caching, chunked prefill mixed with decode and KV
+  block reuse, as serving does. Probes can't reach these: prompt logprobs skip the prefix
+  cache. Two outputs are compared up to and including their first differing token.
 
-The verdict takes the middle of the three scores. That matters because now and then an engine
-launches into a slightly different numeric state for its whole run and disagrees with every
-other run by 20–50%. When the first three runs read "changed", three more run and the middle
-of all six decides, so two stray launches can't flip it either.
+## How it decides
 
-The 1.25× threshold was set on unchanged code only: reruns of one build, and pairs of
-commits that change no engine code, across 4 models on 2 GPUs. `python -m
-klgate.threshold` replays the rule on those runs (kept in `data/kl`) and prints the rates
-and scores below.
+Each part scores the mean KL across builds over the mean KL between reruns.
+
+- Probes: changed above 2×. Probe reruns are often bit-identical, so the noise is pooled
+  from both builds.
+- Traffic: changed above 3×, with the noise from the reference's reruns alone. A bug that
+  corrupts the KV cache at random makes the candidate's runs disagree with each other, and
+  pooling would count that as noise.
 
 ## How well it works
 
-Seven real vLLM bugs, each replayed from its fix PR's buggy parent and fixed commit:
+Seven vLLM fix PRs, each replayed at its buggy parent (the candidate) and fixed commit (the
+reference), and two pairs of commits with identical engine code. Each build ran 6 times on
+an A40 with its entry's settings; the scores use reference seeds 0 1 2 against candidate
+seeds 3 4 5.
 
-| Fix | What broke | GPU | vLLM's gate | klgate.diff |
-| --- | --- | --- | --- | --- |
-| [#45361](https://github.com/vllm-project/vllm/pull/45361) | INT8 KV cache writes truncate instead of rounding | A5000 | caught | caught, 86× |
-| [#36580](https://github.com/vllm-project/vllm/pull/36580) | CUDA-graph padding tokens overwrite real KV cache entries | A40 | missed | caught, 49× |
-| [#30915](https://github.com/vllm-project/vllm/pull/30915) | FlexAttention maps reused blocks to the wrong logical block | A5000 | missed | caught, 9.5× |
-| [#42379](https://github.com/vllm-project/vllm/pull/42379) | RMSNorm upcasts the weight before multiplying; [#46070](https://github.com/vllm-project/vllm/pull/46070) reverted the fix on main | A5000; A40 eager | missed | caught, 1.57× and 1.45× |
-| [#31931](https://github.com/vllm-project/vllm/pull/31931) | Fused MoE applies the router weight after casting to bf16 | A40 | missed | 9 checks in 10, 1.35× |
-| [#32118](https://github.com/vllm-project/vllm/pull/32118) | A 1-token Mamba prefill starts from another request's state | A40 | missed | missed, 0.98× |
-| [#53877](https://github.com/vllm-project/vllm/pull/53877) | DeltaNet decode rounds beta to bf16 early | A5000 | missed | missed, 1.03× |
+| PR | What broke | Probes | Traffic | klgate | GSM8K | vLLM's gate |
+| --- | --- | ---: | ---: | --- | --- | --- |
+| [#30915](https://github.com/vllm-project/vllm/pull/30915) | FlexAttention maps reused blocks to the wrong logical block | 0.95× | 5.43× | changed | 0.255 → 0.247 | passes |
+| [#31931](https://github.com/vllm-project/vllm/pull/31931) | Fused MoE applies the router weight after casting to bf16 | 2.56× | 1.40× | changed | 0.223 → 0.225 | passes |
+| [#32118](https://github.com/vllm-project/vllm/pull/32118) | A 1-token Mamba prefill starts from another request's state | 1.00× | 1.02× | same | 0.525 → 0.541 | passes |
+| [#36580](https://github.com/vllm-project/vllm/pull/36580) | CUDA-graph padding tokens overwrite real KV cache entries | 0.91× | 5.63× | changed | 0.417 → 0.391 | passes |
+| [#42379](https://github.com/vllm-project/vllm/pull/42379) | RMSNorm upcasts the weight before multiplying; [#46070](https://github.com/vllm-project/vllm/pull/46070) reverted the fix on main | 12.47× | 1.20× | changed | 0.415 → 0.415 | passes |
+| [#45361](https://github.com/vllm-project/vllm/pull/45361) | INT8 KV cache writes truncate instead of rounding | 1,647.16× | 49.50× | changed | 0.359 → 0.032 | fails |
+| [#53877](https://github.com/vllm-project/vllm/pull/53877) | DeltaNet decode rounds beta to bf16 early | 1.16× | 1.02× | same | 0.273 → 0.268 | passes |
+| [#30225](https://github.com/vllm-project/vllm/pull/30225) | Nothing: an example connector the engine never loads | 1.01× | 0.79× | same | 0.255 → 0.244 | passes |
+| [#43571](https://github.com/vllm-project/vllm/pull/43571) | Nothing: tests only | 1.06× | 0.91× | same | 0.420 → 0.415 | passes |
 
-Each score is the typical first-round score over 4,000 simulated checks; "9 checks in 10" is
-the share that said "changed". #45361 and #53877 have only 3 runs a side, so theirs is one
-check on all of them. On unchanged code, across 9 sets of runs, at most 1.5% of checks say
-"changed"; without the confirmation round it was up to 7.4%. The gate column is its best
-case: it was given the fixed build's own accuracy as its reference.
+GSM8K is the mean accuracy of the same runs. The gate column applies vLLM's 8-point
+tolerance with the reference's accuracy as the expected value, its best case.
 
-Three end-to-end checks on a rented A40, all with the compiled engine:
+Splitting each build's 6 runs 3 against 3 gives 320 checks of unchanged code (16 distinct
+builds; two appear in two entries). Probes peak at 1.18× and traffic at 2.26×, so none
+crosses a threshold.
 
-| Check | First round | Verdict |
-| --- | --- | --- |
-| Two builds of identical engine code | 0.98× | same |
-| #36580, fixed → buggy | 66.9× | changed, 61.8× over 6 runs |
-| #42379, fixed → buggy | 1.26×, from two off launches | same, 1.02× over 6 runs |
-
-The last one is right: compiled vLLM swaps the RMSNorm CUDA kernel for a compiled one
-(`rms_norm=['native']` in its startup log), so the bug never runs. In eager mode the same
-pair reads 1.41×, changed.
+```sh
+uv run python -m klgate.bench                                     # this table, from data/bench
+uv run python -m klgate.bench run bench/entries/vllm-36580.toml   # rescore an entry on a GPU
+```
 
 ## Limits
 
-- It finds changes, not bugs. "Changed" means the outputs moved beyond noise; an intended
-  numerics change reads the same way. Read the shown prompts and the diff.
-- A change smaller than rerun noise is invisible: #32118 and #53877 above.
-- A check covers the settings it ran. #42379's kernel only runs in eager mode, so with the
-  default compiled engine it reads "same".
-- Off launches set the floor. Why an engine sometimes starts in a different numeric state is
-  open; one build here did it in 4 of 15 runs and its identical-code twin in 0 of 11.
-- It needs vLLM's prebuilt wheels, which the newest commits on main get only after CI, and an
-  NVIDIA GPU. It was tested on an A40 and an RTX A5000, with models of 0.6–1.3B parameters.
-- Gated models need a Hugging Face token for the tokenizer.
-
-## The KL check
-
-`klgate.kl` is more sensitive and needs one engine launch per run. Each run sends two
-kinds of requests:
-
-- **Probes**: 32 fixed 1,024-token chunks of WikiText-2, scored with prompt logprobs as
-  llama.cpp's `--kl-divergence` does. Both builds score identical tokens, so a kernel that
-  rounds differently stands out even when no answer changes.
-- **Traffic**: the 250 GSM8K questions of `diff`, generated greedily. They share a few-shot
-  prefix and outnumber the batch, so prefix caching, chunked prefill and KV block reuse run
-  as they do when serving. Probes can't reach these: prompt logprobs skip the prefix cache.
-
-```sh
-python3 -m klgate.build <sha>    # once per build
-PYTHONPATH=. ~/.cache/klgate/builds/<sha>/bin/python -m klgate.kl score \
-  --model Qwen/Qwen3-0.6B --text wiki.test.raw --prompts bench/prompts/gsm8k-5shot-250.jsonl \
-  --seed 0 --out runs/<sha>-0.npz
-uv run python -m klgate.kl compare --reference runs/<good>-{0,1,2}.npz --candidate runs/<new>-{0,1,2}.npz
-```
-
-Score each build 3 times with seeds 0 to 2; the seed reorders requests, so batches differ. A
-run takes about a minute on an A40. `wiki.test.raw` is llama.cpp's copy, from
-`wikitext-2-raw-v1.zip` in [ggml-org/ci](https://huggingface.co/datasets/ggml-org/ci).
-
-### How it decides
-
-- Probes: the mean KL across builds over the mean KL between reruns of either build, above
-  2×. Probe reruns are often bit-identical, so the noise is pooled from both sides.
-- Traffic: the mean KL across builds over the mean KL between the reference's own reruns,
-  above 3×. Measuring against the reference alone also flags a candidate whose runs disagree
-  with each other, which is how random KV corruption shows.
-
-### How well it works
-
-The same seven bugs and two pairs of identical engine code, 6 runs a build on an A40 with
-each entry's settings, scored 3 against 3 with the fixed build as the reference:
-
-| Fix | Probes | Traffic | Verdict | `klgate.diff` above |
-| --- | --- | --- | --- | --- |
-| #45361 | 3,023× | 50× | changed | 86× |
-| #42379, eager | 13.4× | 1.2× | changed | 1.45× |
-| #31931 | 2.8× | 1.4× | changed | 1.35×, 9 checks in 10 |
-| #30915 | 0.9× | 7.7× | changed | 9.5× |
-| #36580 | 1.0× | 3.3×, 4.6× with 6 a side | changed | 49× |
-| #32118 | 1.0× | 0.8× | same | missed |
-| #53877 | 0.8× | 1.0× | same | missed |
-| Identical engine code, twice | 0.8×, 1.0× | 0.9×, 0.8× | same | same |
-
-Over 360 same-build 3-against-3 splits neither score crossed its threshold: probes peaked at
-1.18×, traffic at 2.26×.
-
-- The thresholds were chosen on these same bugs; an unseen bug may score lower.
-- #36580 corrupts each run differently, from 1.5× to 21× of the noise in single runs, so 3
-  runs a side catch it with a thin margin. Run more when it matters.
-- Model Runner V2 at #36580's commits sometimes returns truncated prompt logprobs; `score`
-  then stops with an error, and a rerun usually works.
-
-## The benchmark
-
-Each entry is a vLLM fix PR's buggy parent and fixed commit, installed from vLLM's per-commit
-wheels and run on a shared, pinned workload. Same-build reruns measure noise; the
-buggy-vs-fixed difference is what a detector must find.
-
-```sh
-python3 -m klgate.build <buggy sha> <fixed sha>    # once per build
-uv run python -m klgate.run bench/entries/vllm-42379.toml --runs 3
-uv run python -m klgate.report bench/entries/vllm-42379.toml
-```
-
-| Path | What |
-| --- | --- |
-| `bench/entries/` | One TOML per regression: the commit pair, model, serving flags, provenance |
-| `bench/workloads/` | Pinned workloads; `gsm8k-5shot` mirrors vLLM's own GSM8K gate, `diff` is what a check runs |
-| `klgate/build.py` | Installs vLLM at an exact commit into its own venv |
-| `klgate/capture.py` | Runs inside a build's venv; saves tokens and top-20 logprobs |
-| `klgate/run.py` | Alternates buggy and fixed builds, one fresh engine per run |
-| `klgate/compare.py` | Bucketed KL on shared greedy prefixes |
-| `klgate/gsm8k.py` | GSM8K accuracy as vLLM scores it, and an exact paired McNemar test |
-| `klgate/report.py` | Every detector on every run pair: false alarms and detections |
-| `klgate/diff.py` | One command: does a candidate build change a model's outputs beyond noise? |
-| `klgate/threshold.py` | Replays the diff rule on stored run pairs: its threshold, false alarms, detections |
-| `klgate/kl.py` | The KL check: probes and traffic in one launch, scored against rerun noise |
-| `data/kl/` | Per-prompt KL between every pair of runs, per GPU and entry |
-| `data/mining/` | Candidate fix PRs mined from vLLM, 2025–2026 |
-
-Under WSL the runner sets `VLLM_USE_V2_MODEL_RUNNER=0` (Model Runner V2 needs pinned memory,
-which vLLM disables in WSL) and `VLLM_USE_FLASHINFER_SAMPLER=0` (FlashInfer JIT-compiles with nvcc).
+- It finds changes, not bugs. An intended numerics change reads "changed" too.
+- A change below rerun noise is invisible: #32118 and #53877.
+- The thresholds were set on these bugs; an unseen bug may score lower.
+- #36580 corrupts each run differently, so 3 runs a side leave a thin margin. Use more
+  runs a side when it matters.
+- A check covers only the settings you pass. #42379's kernel runs only in eager mode.
+- It needs vLLM's per-commit wheels, which the newest commits on main get only after CI,
+  and an NVIDIA GPU. It was tested on an A40 with models under 1.5B parameters.

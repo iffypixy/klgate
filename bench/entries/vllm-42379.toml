@@ -8,10 +8,9 @@ fixed = "124fac10cb0ea83aee2ffeabac0b413d6b759b26"
 how_found = "user report: per-layer diff vs reference (#42325)"
 
 model = "Qwen/Qwen3-0.6B"
-workload = "gsm8k-5shot"
 
 # The custom RMSNorm kernel runs only without torch.compile, which otherwise lowers its
-# own native op; eager mode also fits the 4 GB laptop GPU.
+# own native op.
 [engine]
 enforce_eager = true
 gpu_memory_utilization = 0.55

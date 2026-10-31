@@ -8,9 +8,8 @@ how_found = "user report: gemma-3-4b repeats 'hi' on a 70k-token prompt"
 
 # An ungated mirror of google/gemma-3-1b-it. Its 512-token sliding window is shorter
 # than the 5-shot prompts, so out-of-window blocks are freed and can be reused. The
-# 270m model scores 0% on GSM8K, which would leave accuracy detectors nothing to see.
+# 270m model scores 0% on GSM8K, which would leave an accuracy check nothing to see.
 model = "unsloth/gemma-3-1b-it"
-workload = "gsm8k-5shot"
 
 [engine]
 enforce_eager = true

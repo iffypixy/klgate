@@ -1,1 +1,0 @@
-{"body":"Part of #36930. Split into a separate PR for faster merge","files":[{"path":"vllm/v1/worker/gpu/sample/sampler.py","additions":1,"deletions":1}],"mergeCommit":{"oid":"96efb91480cd973dbcffab25ccb4b3a119b9929e"},"number":37144,"title":"[Model Runner V2] Fix processed logits in sample()"}

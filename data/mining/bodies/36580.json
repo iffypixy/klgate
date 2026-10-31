@@ -1,1 +1,0 @@
-{"body":"Cause of insidious correctness issues","files":[{"path":"vllm/v1/worker/gpu/block_table.py","additions":5,"deletions":4}],"mergeCommit":{"oid":"9efc3bdcd6749f6d0ba26b12aee27cc8829c6f93"},"number":36580,"title":"[Model Runner V2] Fix `_compute_slot_mappings_kernel` for chunked prefill"}

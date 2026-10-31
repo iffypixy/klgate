@@ -7,7 +7,6 @@ fixed = "9efc3bdcd6749f6d0ba26b12aee27cc8829c6f93"
 how_found = "maintainer: \"cause of insidious correctness issues\""
 
 model = "Qwen/Qwen3-0.6B"
-workload = "gsm8k-5shot"
 
 # CUDA graphs stay on: padding to a captured size is what triggers the bug.
 [engine]

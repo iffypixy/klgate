@@ -8,7 +8,6 @@ baseline = "c0056b19bf4930ae7830e753b048b3daca0fbfee"
 candidate = "e9499996df8968f473db1f6bc7ec31207022aea0"
 
 model = "Qwen/Qwen3-0.6B"
-workload = "gsm8k-5shot"
 
 # The same setup as vllm-42379.
 [engine]

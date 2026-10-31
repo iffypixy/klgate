@@ -1,6 +1,0 @@
-# vLLM's own GSM8K gate (tests/evals/gsm8k/gsm8k_eval.py): 5-shot from the first five
-# train questions, all 1,319 test questions, greedy, 256 tokens, the same stop strings.
-mode = "offline"
-prompts = "bench/prompts/gsm8k-5shot.jsonl"
-max_tokens = 256
-stop = ["Question", "Assistant:", "<|separator|>"]
